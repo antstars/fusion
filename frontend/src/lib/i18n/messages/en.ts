@@ -163,6 +163,7 @@ export const enMessages = {
   "article.action.original": "Original",
   "article.action.star": "Star",
   "article.action.unstar": "Unstar",
+  "article.detail.selectArticle": "Select an article",
   "article.feedFallback": "Feed",
   "article.filter.all": "All",
   "article.filter.starred": "Starred",

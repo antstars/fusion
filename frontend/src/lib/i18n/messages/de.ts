@@ -164,6 +164,7 @@ export const deMessages: PartialMessages = {
   "article.action.original": "Original",
   "article.action.star": "Favorisieren",
   "article.action.unstar": "Entfernen",
+  "article.detail.selectArticle": "Artikel auswahlen",
   "article.feedFallback": "Feed",
   "article.filter.all": "Alle",
   "article.filter.starred": "Favoriten",

@@ -16,6 +16,7 @@ interface ArticleItemProps {
   isStarred: boolean;
   feedName: string;
   feedFaviconUrl: string | null;
+  compact?: boolean;
 }
 
 export function ArticleItem({
@@ -28,6 +29,7 @@ export function ArticleItem({
   isStarred,
   feedName,
   feedFaviconUrl,
+  compact = false,
 }: ArticleItemProps) {
   const { t } = useI18n();
 
@@ -67,6 +69,7 @@ export function ArticleItem({
       }}
       className={cn(
         "group relative flex w-full cursor-pointer items-start gap-4 border-b px-4 py-4 text-left transition-colors hover:bg-accent/50",
+        compact && "px-3 py-3",
         isSelected && "bg-accent",
       )}
     >
@@ -80,7 +83,12 @@ export function ArticleItem({
         >
           {article.title}
         </h3>
-        <p className="line-clamp-2 text-sm text-muted-foreground">
+        <p
+          className={cn(
+            "line-clamp-2 text-sm text-muted-foreground",
+            compact && "line-clamp-1 text-xs",
+          )}
+        >
           {extractSummary(article.content, 150)}
         </p>
         <div className="flex items-center gap-2 text-xs">

@@ -164,6 +164,7 @@ export const zhMessages: PartialMessages = {
   "article.action.original": "原文",
   "article.action.star": "收藏",
   "article.action.unstar": "取消收藏",
+  "article.detail.selectArticle": "选择一篇文章",
   "article.feedFallback": "订阅",
   "article.filter.all": "全部",
   "article.filter.starred": "已收藏",

@@ -27,9 +27,14 @@ import {
 import { queryKeys } from "@/queries/keys";
 import { getFaviconUrl } from "@/lib/api/favicon";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { Item } from "@/lib/api";
 
-export function ArticleList() {
+interface ArticleListProps {
+  compact?: boolean;
+}
+
+export function ArticleList({ compact = false }: ArticleListProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const {
@@ -239,7 +244,7 @@ export function ArticleList() {
 
   return (
     <div className="flex h-full flex-col">
-      <ContentHeader>
+      <ContentHeader className={compact ? "px-4 sm:px-4" : undefined}>
         <div className="flex min-w-0 items-center gap-1">
           <SidebarTrigger />
           <h2 className="truncate text-lg font-semibold">{title}</h2>
@@ -249,15 +254,20 @@ export function ArticleList() {
           size="sm"
           onClick={handleMarkAllAsRead}
           disabled={unreadCount === 0}
-          className="gap-1.5 text-xs"
+          className={cn("gap-1.5 text-xs", compact && "px-2")}
         >
           <CheckCheck className="h-4 w-4" />
-          {t("article.list.markAllRead")}
+          {!compact && t("article.list.markAllRead")}
         </Button>
       </ContentHeader>
 
       {/* Article area with filter tabs */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6",
+          compact && "sm:px-4",
+        )}
+      >
         {/* Filter tabs - hidden when no articles exist */}
         {!hasNoFeeds && (articles.length > 0 || articleFilter !== "all") && (
           <Tabs
@@ -317,6 +327,7 @@ export function ArticleList() {
                     <ArticleItem
                       key={article.id}
                       article={article}
+                      compact={compact}
                       selectedArticleId={selectedArticleId}
                       onSelectArticle={setSelectedArticle}
                       onToggleRead={handleToggleRead}

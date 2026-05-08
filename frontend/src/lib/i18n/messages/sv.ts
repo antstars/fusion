@@ -164,6 +164,7 @@ export const svMessages: PartialMessages = {
   "article.action.original": "Original",
   "article.action.star": "Stjarna",
   "article.action.unstar": "Ta bort",
+  "article.detail.selectArticle": "Valj en artikel",
   "article.feedFallback": "Flode",
   "article.filter.all": "Alla",
   "article.filter.starred": "Stjarnmarkta",

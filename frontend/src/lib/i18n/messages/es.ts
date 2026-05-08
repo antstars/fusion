@@ -164,6 +164,7 @@ export const esMessages: PartialMessages = {
   "article.action.original": "Original",
   "article.action.star": "Destacar",
   "article.action.unstar": "Quitar",
+  "article.detail.selectArticle": "Selecciona un articulo",
   "article.feedFallback": "Feed",
   "article.filter.all": "Todos",
   "article.filter.starred": "Destacados",

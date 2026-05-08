@@ -57,7 +57,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <main className="flex-1 overflow-hidden">{children}</main>
 
       {/* Modals and drawers */}
-      <ArticleDrawer />
+      {isMobile && <ArticleDrawer />}
       <SearchDialog />
       <SettingsDialog />
       <AddGroupDialog />

@@ -164,6 +164,7 @@ export const frMessages: PartialMessages = {
   "article.action.original": "Original",
   "article.action.star": "Favori",
   "article.action.unstar": "Retirer",
+  "article.detail.selectArticle": "Selectionnez un article",
   "article.feedFallback": "Flux",
   "article.filter.all": "Tous",
   "article.filter.starred": "Favoris",

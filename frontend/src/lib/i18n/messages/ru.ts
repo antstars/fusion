@@ -164,6 +164,7 @@ export const ruMessages: PartialMessages = {
   "article.action.original": "Оригинал",
   "article.action.star": "В избранное",
   "article.action.unstar": "Убрать",
+  "article.detail.selectArticle": "Select an article",
   "article.feedFallback": "Лента",
   "article.filter.all": "Все",
   "article.filter.starred": "Избранные",
