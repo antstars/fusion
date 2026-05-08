@@ -52,7 +52,7 @@ export const deMessages: PartialMessages = {
   "settings.about.github": "GitHub",
   "settings.about.install": "App installieren",
   "settings.about.installing": "Wird installiert...",
-  "settings.about.license": "MIT-Lizenz © 2024 Rook1e",
+  "settings.about.license": "MIT-Lizenz © 2026 antstars",
   "settings.about.reportIssue": "Problem melden",
   "settings.articlePageSize.description": "Anzahl der pro Anfrage geladenen Artikel",
   "settings.articlePageSize.label": "Artikel pro Laden",

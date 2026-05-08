@@ -52,7 +52,7 @@ export const esMessages: PartialMessages = {
   "settings.about.github": "GitHub",
   "settings.about.install": "Instalar aplicacion",
   "settings.about.installing": "Instalando...",
-  "settings.about.license": "Licencia MIT © 2024 Rook1e",
+  "settings.about.license": "Licencia MIT © 2026 antstars",
   "settings.about.reportIssue": "Reportar problema",
   "settings.articlePageSize.description": "Numero de articulos obtenidos en cada carga",
   "settings.articlePageSize.label": "Articulos por carga",

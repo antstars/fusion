@@ -52,7 +52,7 @@ export const ruMessages: PartialMessages = {
   "settings.about.github": "GitHub",
   "settings.about.install": "Установить приложение",
   "settings.about.installing": "Установка...",
-  "settings.about.license": "Лицензия MIT © 2024 Rook1e",
+  "settings.about.license": "Лицензия MIT © 2026 antstars",
   "settings.about.reportIssue": "Сообщить о проблеме",
   "settings.articlePageSize.description": "Количество статей, загружаемых за один раз",
   "settings.articlePageSize.label": "Статей за загрузку",

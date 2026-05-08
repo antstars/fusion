@@ -50,7 +50,7 @@ export const enMessages = {
   "settings.about.github": "GitHub",
   "settings.about.install": "Install App",
   "settings.about.installing": "Installing...",
-  "settings.about.license": "MIT License © 2024 Rook1e",
+  "settings.about.license": "MIT License © 2026 antstars",
   "settings.about.reportIssue": "Report Issue",
   "settings.articlePageSize.description": "Number of articles fetched each time",
   "settings.articlePageSize.label": "Articles per load",

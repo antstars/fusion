@@ -206,7 +206,7 @@ function AboutContent() {
         )}
         <Button variant="outline" size="sm" asChild>
           <a
-            href="https://github.com/0x2e/fusion"
+            href="https://github.com/antstars/fusion"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -216,7 +216,7 @@ function AboutContent() {
         </Button>
         <Button variant="outline" size="sm" asChild>
           <a
-            href="https://github.com/0x2e/fusion/issues"
+            href="https://github.com/antstars/fusion/issues"
             target="_blank"
             rel="noopener noreferrer"
           >

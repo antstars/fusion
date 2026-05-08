@@ -21,7 +21,7 @@
 <details>
   <summary><strong>Option 1 (Recommended): Run pre-built binary from Releases</strong></summary>
 
-Download the binary for your platform from [Releases](https://github.com/0x2E/fusion/releases), then run:
+Download the binary for your platform from [Releases](https://github.com/antstars/fusion/releases), then run:
 
 ```shell
 chmod +x fusion
