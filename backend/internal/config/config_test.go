@@ -5,8 +5,11 @@ import (
 	"testing"
 )
 
+const testDatabaseURL = "postgres://fusion:fusion@localhost:5432/fusion?sslmode=disable"
+
 func TestLoadParsesCORSAndPrivateFeedSettings(t *testing.T) {
 	t.Setenv("FUSION_PASSWORD", "secret")
+	t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
 	t.Setenv("FUSION_CORS_ALLOWED_ORIGINS", " https://app.example.com , , https://admin.example.com/ ")
 	t.Setenv("FUSION_TRUSTED_PROXIES", " 10.0.0.1 , 192.168.1.0/24 ")
 	t.Setenv("FUSION_ALLOW_PRIVATE_FEEDS", "true")
@@ -41,6 +44,7 @@ func TestLoadParsesCORSAndPrivateFeedSettings(t *testing.T) {
 
 func TestLoadUsesDefaultPullMaxBackoff(t *testing.T) {
 	t.Setenv("FUSION_PASSWORD", "secret")
+	t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
 
 	cfg, err := Load()
 	if err != nil {
@@ -55,6 +59,7 @@ func TestLoadUsesDefaultPullMaxBackoff(t *testing.T) {
 func TestLoadFeverUsername(t *testing.T) {
 	t.Run("uses default username", func(t *testing.T) {
 		t.Setenv("FUSION_PASSWORD", "secret")
+		t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
 
 		cfg, err := Load()
 		if err != nil {
@@ -68,6 +73,7 @@ func TestLoadFeverUsername(t *testing.T) {
 
 	t.Run("uses explicit username", func(t *testing.T) {
 		t.Setenv("FUSION_PASSWORD", "secret")
+		t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
 		t.Setenv("FUSION_FEVER_USERNAME", " reader ")
 
 		cfg, err := Load()
@@ -83,6 +89,7 @@ func TestLoadFeverUsername(t *testing.T) {
 
 func TestLoadParsesKubernetesStyleFusionPort(t *testing.T) {
 	t.Setenv("FUSION_PASSWORD", "secret")
+	t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
 	t.Setenv("FUSION_PORT", "tcp://10.43.157.55:8080")
 
 	cfg, err := Load()
@@ -97,6 +104,7 @@ func TestLoadParsesKubernetesStyleFusionPort(t *testing.T) {
 
 func TestLoadRejectsInvalidFusionPort(t *testing.T) {
 	t.Setenv("FUSION_PASSWORD", "secret")
+	t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
 	t.Setenv("FUSION_PORT", "tcp://10.43.157.55")
 
 	_, err := Load()
@@ -106,4 +114,48 @@ func TestLoadRejectsInvalidFusionPort(t *testing.T) {
 	if !strings.Contains(err.Error(), "invalid FUSION_PORT") {
 		t.Fatalf("expected error to mention invalid FUSION_PORT, got %v", err)
 	}
+}
+
+func TestLoadParsesPostgresAndRedisSettings(t *testing.T) {
+	t.Setenv("FUSION_PASSWORD", "secret")
+	t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
+	t.Setenv("FUSION_REDIS_URL", "redis://localhost:6379/0")
+	t.Setenv("FUSION_CACHE_TTL_SECONDS", "30")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	if cfg.DatabaseURL == "" {
+		t.Fatal("expected DatabaseURL to be set")
+	}
+	if cfg.RedisURL != "redis://localhost:6379/0" {
+		t.Fatalf("unexpected RedisURL: %q", cfg.RedisURL)
+	}
+	if cfg.CacheTTLSeconds != 30 {
+		t.Fatalf("expected CacheTTLSeconds 30, got %d", cfg.CacheTTLSeconds)
+	}
+}
+
+func TestLoadRejectsInvalidDatabaseSettings(t *testing.T) {
+	t.Run("missing postgres url", func(t *testing.T) {
+		t.Setenv("FUSION_PASSWORD", "secret")
+
+		_, err := Load()
+		if err == nil || !strings.Contains(err.Error(), "FUSION_DATABASE_URL is required") {
+			t.Fatalf("expected missing database url error, got %v", err)
+		}
+	})
+
+	t.Run("invalid redis url", func(t *testing.T) {
+		t.Setenv("FUSION_PASSWORD", "secret")
+		t.Setenv("FUSION_DATABASE_URL", testDatabaseURL)
+		t.Setenv("FUSION_REDIS_URL", "http://localhost:6379")
+
+		_, err := Load()
+		if err == nil || !strings.Contains(err.Error(), "invalid FUSION_REDIS_URL") {
+			t.Fatalf("expected invalid redis url error, got %v", err)
+		}
+	})
 }

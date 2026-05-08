@@ -57,18 +57,18 @@ Open `http://localhost:8080`.
 Docker Compose example:
 
 ```yaml
-version: "3"
 services:
   fusion:
-    image: ghcr.io/0x2e/fusion:latest
+    build:
+      context: .
+    env_file:
+      - .env.example
     ports:
       - "127.0.0.1:8080:8080"
-    environment:
-      - FUSION_PASSWORD=fusion
     restart: unless-stopped
-    volumes:
-      - ./data:/data
 ```
+
+The repository `docker-compose.yml` builds Fusion from source and reads `.env`. Provide PostgreSQL, and optionally Redis, as external services.
 </details>
 
 <details>
@@ -89,12 +89,17 @@ See [Contributing](./CONTRIBUTING.md).
 Most users only need one setting to get started:
 
 - Set `FUSION_PASSWORD`.
+- Set `FUSION_DATABASE_URL` to an external PostgreSQL database.
 - For local trusted environments only: set `FUSION_ALLOW_EMPTY_PASSWORD=true` to run without auth when OIDC is also disabled.
 
 Then configure based on your goal:
 
 - Run locally or on a home server
-  - Optional: `FUSION_PORT`, `FUSION_DB_PATH`
+  - Optional: `FUSION_PORT`
+- Use Docker Compose
+  - Copy `.env.example` to `.env`
+  - Configure `FUSION_DATABASE_URL` for your external PostgreSQL service
+  - Configure `FUSION_REDIS_URL` only when you provide an external Redis service
 - Expose Fusion behind a reverse proxy
   - Configure: `FUSION_CORS_ALLOWED_ORIGINS`, `FUSION_TRUSTED_PROXIES`
 - Use mobile/desktop Fever clients (Reeder, Unread, FeedMe)
@@ -109,10 +114,13 @@ Then configure based on your goal:
   - Optional for private networks: `FUSION_ALLOW_PRIVATE_FEEDS`
 - Troubleshoot deployments
   - Configure: `FUSION_LOG_LEVEL`, `FUSION_LOG_FORMAT`
+- Tune read cache
+  - Configure: `FUSION_REDIS_URL`, `FUSION_CACHE_TTL_SECONDS`
+  - Leave `FUSION_REDIS_URL` empty to disable Redis caching
 
 For the complete variable reference, see [`.env.example`](./.env.example).
 
-Legacy env names (`DB`, `PASSWORD`, `PORT`) are still accepted for backward compatibility.
+Legacy env names (`PASSWORD`, `PORT`) are still accepted for backward compatibility.
 
 ## Documentation
 

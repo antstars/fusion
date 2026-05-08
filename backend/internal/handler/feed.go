@@ -114,6 +114,7 @@ func (h *Handler) createFeed(c *gin.Context) {
 		if err := h.puller.RefreshFeed(ctx, feedID); err != nil {
 			slog.Warn("initial feed pull failed", "feed_id", feedID, "error", err)
 		}
+		h.invalidateReadCache(context.Background())
 	}(feed.ID)
 
 	dataResponse(c, feed)
@@ -324,6 +325,7 @@ func (h *Handler) refreshFeed(c *gin.Context) {
 		if err := h.puller.RefreshFeed(ctx, feedID); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			slog.Warn("refresh feed failed", "feed_id", feedID, "error", err)
 		}
+		h.invalidateReadCache(context.Background())
 	}(id)
 
 	c.Status(http.StatusAccepted)
@@ -345,6 +347,7 @@ func (h *Handler) refreshAllFeeds(c *gin.Context) {
 		if count, err := h.puller.RefreshAll(ctx); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			slog.Warn("refresh all feeds failed", "refreshed", count, "error", err)
 		}
+		h.invalidateReadCache(context.Background())
 	}()
 
 	c.Status(http.StatusAccepted)
@@ -404,6 +407,7 @@ func (h *Handler) batchCreateFeeds(c *gin.Context) {
 			if err := h.puller.RefreshFeed(ctx, feedID); err != nil {
 				slog.Warn("initial feed pull failed", "feed_id", feedID, "error", err)
 			}
+			h.invalidateReadCache(context.Background())
 		}(id)
 	}
 

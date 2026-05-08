@@ -1,156 +1,99 @@
 package store
 
 import (
-	"database/sql"
-	"embed"
 	"fmt"
 	"log/slog"
-	"sort"
-	"strconv"
-	"strings"
 	"time"
 )
 
-// Migration files must follow naming convention: NNN_description.sql
-// where NNN is a zero-padded version number (e.g., 001_initial.sql).
-//
-//go:embed migrations/*.sql
-var migrationFiles embed.FS
-
 func (s *Store) migrate() error {
 	startedAt := time.Now()
-	slog.Info("database migration started")
+	slog.Info("postgres database migration started")
 
-	if err := s.createMigrationsTable(); err != nil {
-		return fmt.Errorf("create migrations table: %w", err)
-	}
-
-	applied, err := s.getAppliedVersions()
-	if err != nil {
-		return fmt.Errorf("get applied versions: %w", err)
-	}
-
-	entries, err := migrationFiles.ReadDir("migrations")
-	if err != nil {
-		return fmt.Errorf("read migrations dir: %w", err)
-	}
-
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name() < entries[j].Name()
-	})
-
-	appliedCount := 0
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		version, err := extractVersion(entry.Name())
-		if err != nil {
-			return fmt.Errorf("invalid migration filename %s: %w", entry.Name(), err)
-		}
-
-		if applied[version] {
-			slog.Debug("migration already applied", "version", version, "file", entry.Name())
-			continue
-		}
-
-		slog.Info("applying migration", "version", version, "file", entry.Name())
-		if err := s.applyMigration(version, entry.Name()); err != nil {
-			return fmt.Errorf("apply migration %s: %w", entry.Name(), err)
-		}
-
-		appliedCount++
-		slog.Info("migration applied", "version", version, "file", entry.Name())
-	}
-
-	slog.Info(
-		"database migration finished",
-		"applied", appliedCount,
-		"duration", time.Since(startedAt),
-	)
-
-	return nil
-}
-
-func (s *Store) createMigrationsTable() error {
 	schema := `
-	CREATE TABLE IF NOT EXISTS schema_migrations (
-		version INTEGER PRIMARY KEY,
-		applied_at INTEGER NOT NULL DEFAULT (unixepoch())
-	);
-	`
-	_, err := s.db.Exec(schema)
-	return err
-}
+CREATE TABLE IF NOT EXISTS schema_migrations (
+	version INTEGER PRIMARY KEY,
+	applied_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
 
-func (s *Store) getAppliedVersions() (map[int]bool, error) {
-	rows, err := s.db.Query("SELECT version FROM schema_migrations")
-	if err != nil {
-		return nil, err
+CREATE TABLE IF NOT EXISTS groups (
+	id BIGSERIAL PRIMARY KEY,
+	name TEXT NOT NULL UNIQUE,
+	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT)),
+	updated_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
+INSERT INTO groups (id, name)
+VALUES (1, 'Default')
+ON CONFLICT (id) DO NOTHING;
+SELECT setval(pg_get_serial_sequence('groups', 'id'), GREATEST((SELECT MAX(id) FROM groups), 1));
+
+CREATE TABLE IF NOT EXISTS feeds (
+	id BIGSERIAL PRIMARY KEY,
+	group_id BIGINT NOT NULL DEFAULT 1 REFERENCES groups(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+	name TEXT NOT NULL,
+	link TEXT NOT NULL UNIQUE,
+	site_url TEXT DEFAULT '',
+	suspended INTEGER DEFAULT 0,
+	proxy TEXT DEFAULT '',
+	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT)),
+	updated_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
+CREATE INDEX IF NOT EXISTS idx_feeds_group_id ON feeds(group_id);
+
+CREATE TABLE IF NOT EXISTS items (
+	id BIGSERIAL PRIMARY KEY,
+	feed_id BIGINT NOT NULL REFERENCES feeds(id) ON UPDATE CASCADE ON DELETE CASCADE,
+	guid TEXT NOT NULL,
+	title TEXT DEFAULT '',
+	link TEXT DEFAULT '',
+	content TEXT DEFAULT '',
+	pub_date BIGINT DEFAULT 0,
+	unread INTEGER DEFAULT 1,
+	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_items_feed_guid ON items(feed_id, guid);
+CREATE INDEX IF NOT EXISTS idx_items_unread ON items(unread) WHERE unread = 1;
+CREATE INDEX IF NOT EXISTS idx_items_pub_date ON items(pub_date DESC);
+CREATE INDEX IF NOT EXISTS idx_items_feed_unread ON items(feed_id, unread);
+
+CREATE TABLE IF NOT EXISTS bookmarks (
+	id BIGSERIAL PRIMARY KEY,
+	item_id BIGINT REFERENCES items(id) ON UPDATE CASCADE ON DELETE SET NULL,
+	link TEXT NOT NULL UNIQUE,
+	title TEXT DEFAULT '',
+	content TEXT DEFAULT '',
+	pub_date BIGINT DEFAULT 0,
+	feed_name TEXT DEFAULT '',
+	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_created_at ON bookmarks(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS feed_fetch_state (
+	feed_id BIGINT PRIMARY KEY REFERENCES feeds(id) ON UPDATE CASCADE ON DELETE CASCADE,
+	etag TEXT NOT NULL DEFAULT '',
+	last_modified TEXT NOT NULL DEFAULT '',
+	cache_control TEXT NOT NULL DEFAULT '',
+	expires_at BIGINT NOT NULL DEFAULT 0,
+	last_checked_at BIGINT NOT NULL DEFAULT 0,
+	next_check_at BIGINT NOT NULL DEFAULT 0,
+	last_http_status INTEGER NOT NULL DEFAULT 0,
+	retry_after_until BIGINT NOT NULL DEFAULT 0,
+	last_success_at BIGINT NOT NULL DEFAULT 0,
+	last_error_at BIGINT NOT NULL DEFAULT 0,
+	last_error TEXT NOT NULL DEFAULT '',
+	consecutive_failures BIGINT NOT NULL DEFAULT 0,
+	updated_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
+CREATE INDEX IF NOT EXISTS idx_feed_fetch_state_next_check_at ON feed_fetch_state(next_check_at);
+
+INSERT INTO schema_migrations (version) VALUES (1), (2)
+ON CONFLICT (version) DO NOTHING;
+`
+
+	if _, err := s.db.Exec(schema); err != nil {
+		return fmt.Errorf("initialize postgres schema: %w", err)
 	}
-	defer rows.Close()
 
-	applied := make(map[int]bool)
-	for rows.Next() {
-		var version int
-		if err := rows.Scan(&version); err != nil {
-			return nil, err
-		}
-		applied[version] = true
-	}
-
-	return applied, rows.Err()
-}
-
-// applyMigration executes a migration file within a transaction.
-// Both the migration SQL and version record are committed atomically,
-// ensuring consistent migration state even if the process crashes.
-func (s *Store) applyMigration(version int, filename string) error {
-	content, err := migrationFiles.ReadFile("migrations/" + filename)
-	if err != nil {
-		return err
-	}
-
-	tx, err := s.db.Begin()
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.Exec(string(content)); err != nil {
-		return fmt.Errorf("exec migration: %w", err)
-	}
-
-	if _, err := tx.Exec(
-		"INSERT INTO schema_migrations (version) VALUES (:version)",
-		sql.Named("version", version),
-	); err != nil {
-		return fmt.Errorf("record version: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
-	}
-
+	slog.Info("postgres database migration finished", "duration", time.Since(startedAt))
 	return nil
-}
-
-func extractVersion(filename string) (int, error) {
-	if !strings.HasSuffix(filename, ".sql") {
-		return 0, fmt.Errorf("not a .sql file")
-	}
-
-	parts := strings.SplitN(filename, "_", 2)
-	if len(parts) < 2 {
-		return 0, fmt.Errorf("invalid format, expected NNN_description.sql")
-	}
-
-	version, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, fmt.Errorf("invalid version number: %w", err)
-	}
-
-	return version, nil
 }

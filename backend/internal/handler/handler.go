@@ -1,14 +1,18 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/0x2E/fusion/internal/auth"
+	"github.com/0x2E/fusion/internal/cache"
 	"github.com/0x2E/fusion/internal/config"
 	"github.com/0x2E/fusion/internal/store"
 	"github.com/gin-gonic/gin"
@@ -17,6 +21,8 @@ import (
 type Handler struct {
 	store        *store.Store
 	config       *config.Config
+	cache        cache.Cache
+	cacheTTL     time.Duration
 	passwordHash string // bcrypt hash computed at startup
 	feverAPIKey  string // md5(username:password) used by Fever API
 	allowAnonAPI bool   // true when both password and OIDC auth are disabled
@@ -38,15 +44,27 @@ func New(store *store.Store, config *config.Config, puller interface {
 	RefreshFeed(ctx context.Context, feedID int64) error
 	RefreshAll(ctx context.Context) (int, error)
 }) (*Handler, error) {
+	return NewWithCache(store, config, puller, cache.NoopCache{})
+}
+
+func NewWithCache(store *store.Store, config *config.Config, puller interface {
+	RefreshFeed(ctx context.Context, feedID int64) error
+	RefreshAll(ctx context.Context) (int, error)
+}, responseCache cache.Cache) (*Handler, error) {
 	// Hash password at startup for later verification
 	passwordHash, err := auth.HashPassword(config.Password)
 	if err != nil {
 		return nil, fmt.Errorf("hash password: %w", err)
 	}
+	if responseCache == nil {
+		responseCache = cache.NoopCache{}
+	}
 
 	h := &Handler{
 		store:        store,
 		config:       config,
+		cache:        responseCache,
+		cacheTTL:     time.Duration(config.CacheTTLSeconds) * time.Second,
 		passwordHash: passwordHash,
 		feverAPIKey:  deriveFeverAPIKey(config.FeverUsername, config.Password),
 		allowAnonAPI: strings.TrimSpace(config.Password) == "" && strings.TrimSpace(config.OIDCIssuer) == "",
@@ -113,6 +131,7 @@ func (h *Handler) SetupRouter() *gin.Engine {
 
 		auth := api.Group("")
 		auth.Use(h.authMiddleware())
+		auth.Use(h.cacheMiddleware())
 		{
 			auth.GET("/groups", h.listGroups)
 			auth.POST("/groups", h.createGroup)
@@ -149,6 +168,67 @@ func (h *Handler) SetupRouter() *gin.Engine {
 	}
 
 	return r
+}
+
+type cacheResponseWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w cacheResponseWriter) Write(data []byte) (int, error) {
+	w.body.Write(data)
+	return w.ResponseWriter.Write(data)
+}
+
+func (h *Handler) cacheMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if h.cacheTTL <= 0 || c.Request.Method != http.MethodGet || !h.isCacheablePath(c.Request.URL.Path) {
+			c.Next()
+			if c.Request.Method != http.MethodGet && c.Writer.Status() < 400 {
+				h.invalidateReadCache(c.Request.Context())
+			}
+			return
+		}
+
+		key := h.cacheKey(c)
+		if cached, err := h.cache.Get(c.Request.Context(), key); err == nil {
+			c.Data(http.StatusOK, "application/json; charset=utf-8", cached)
+			c.Abort()
+			return
+		} else if err != nil && !errors.Is(err, cache.ErrMiss) {
+			slog.Warn("read cache get failed", "error", err)
+		}
+
+		writer := &cacheResponseWriter{ResponseWriter: c.Writer, body: bytes.NewBuffer(nil)}
+		c.Writer = writer
+		c.Next()
+
+		if c.Writer.Status() == http.StatusOK && strings.HasPrefix(c.Writer.Header().Get("Content-Type"), "application/json") {
+			if err := h.cache.Set(c.Request.Context(), key, writer.body.Bytes(), h.cacheTTL); err != nil {
+				slog.Warn("read cache set failed", "error", err)
+			}
+		}
+	}
+}
+
+func (h *Handler) isCacheablePath(path string) bool {
+	for _, prefix := range []string{"/api/groups", "/api/feeds", "/api/items", "/api/bookmarks", "/api/search"} {
+		if path == prefix || strings.HasPrefix(path, prefix+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+func (h *Handler) cacheKey(c *gin.Context) string {
+	sessionID, _ := c.Cookie("session")
+	return "fusion:api:" + sessionID + ":" + c.Request.URL.RequestURI()
+}
+
+func (h *Handler) invalidateReadCache(ctx context.Context) {
+	if err := h.cache.DeletePrefix(ctx, "fusion:api:"); err != nil {
+		slog.Warn("read cache invalidation failed", "error", err)
+	}
 }
 
 func (h *Handler) configureTrustedProxies(r *gin.Engine) error {

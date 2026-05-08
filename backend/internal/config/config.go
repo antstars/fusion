@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	DBPath        string
+	DatabaseURL   string
 	Password      string // Plaintext password from env
 	Port          int
 	FeverUsername string // Username used to derive Fever API key.
@@ -30,6 +30,9 @@ type Config struct {
 	LogLevel  string // Log level: DEBUG, INFO, WARN, ERROR (default: INFO)
 	LogFormat string // Log format: text, json, auto (default: auto)
 
+	RedisURL        string
+	CacheTTLSeconds int
+
 	// OIDC Configuration (optional, enabled when OIDCIssuer is set)
 	OIDCIssuer       string // OIDC provider URL
 	OIDCClientID     string // OAuth2 client ID
@@ -40,15 +43,18 @@ type Config struct {
 
 func Load() (*Config, error) {
 	// Backward compatible env vars:
-	// - DB (legacy) -> FUSION_DB_PATH
 	// - PASSWORD (legacy) -> FUSION_PASSWORD
 	// - PORT (legacy) -> FUSION_PORT
-	dbPath := os.Getenv("FUSION_DB_PATH")
-	if dbPath == "" {
-		dbPath = os.Getenv("DB")
+	databaseURL := strings.TrimSpace(os.Getenv("FUSION_DATABASE_URL"))
+	if databaseURL == "" {
+		return nil, fmt.Errorf("FUSION_DATABASE_URL is required")
 	}
-	if dbPath == "" {
-		dbPath = "fusion.db"
+	parsedURL, err := url.Parse(databaseURL)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return nil, fmt.Errorf("invalid FUSION_DATABASE_URL")
+	}
+	if parsedURL.Scheme != "postgres" && parsedURL.Scheme != "postgresql" {
+		return nil, fmt.Errorf("invalid FUSION_DATABASE_URL: scheme must be postgres or postgresql")
 	}
 
 	password := os.Getenv("FUSION_PASSWORD")
@@ -128,8 +134,24 @@ func Load() (*Config, error) {
 		logFormat = "auto"
 	}
 
+	redisURL := strings.TrimSpace(os.Getenv("FUSION_REDIS_URL"))
+	if redisURL != "" {
+		parsedURL, err := url.Parse(redisURL)
+		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+			return nil, fmt.Errorf("invalid FUSION_REDIS_URL")
+		}
+		if parsedURL.Scheme != "redis" && parsedURL.Scheme != "rediss" {
+			return nil, fmt.Errorf("invalid FUSION_REDIS_URL: scheme must be redis or rediss")
+		}
+	}
+
+	cacheTTLSeconds, err := getEnvInt("FUSION_CACHE_TTL_SECONDS", 120, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
-		DBPath:             dbPath,
+		DatabaseURL:        databaseURL,
 		Password:           password,
 		Port:               parsedPort,
 		FeverUsername:      getEnvString("FUSION_FEVER_USERNAME", "fusion"),
@@ -145,6 +167,8 @@ func Load() (*Config, error) {
 		LoginBlock:         loginBlock,
 		LogLevel:           logLevel,
 		LogFormat:          logFormat,
+		RedisURL:           redisURL,
+		CacheTTLSeconds:    cacheTTLSeconds,
 
 		OIDCIssuer:       os.Getenv("FUSION_OIDC_ISSUER"),
 		OIDCClientID:     os.Getenv("FUSION_OIDC_CLIENT_ID"),

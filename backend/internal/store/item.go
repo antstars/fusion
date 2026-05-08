@@ -66,7 +66,7 @@ func (s *Store) ListItems(params ListItemsParams) ([]*model.Item, error) {
 		args = append(args, sql.Named("offset", params.Offset))
 	}
 
-	rows, err := s.db.Query(query, args...)
+	rows, err := s.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *Store) ListItems(params ListItemsParams) ([]*model.Item, error) {
 func (s *Store) GetItem(id int64) (*model.Item, error) {
 	i := &model.Item{}
 	var unread int
-	err := s.db.QueryRow(`
+	err := s.queryRow(`
 		SELECT id, feed_id, guid, title, link, content, pub_date, unread, created_at
 		FROM items
 		WHERE id = :id
@@ -105,16 +105,11 @@ func (s *Store) GetItem(id int64) (*model.Item, error) {
 }
 
 func (s *Store) CreateItem(feedID int64, guid, title, link, content string, pubDate int64) (*model.Item, error) {
-	result, err := s.db.Exec(`
+	id, err := s.insertAndReturnID(s.db, `
 		INSERT INTO items (feed_id, guid, title, link, content, pub_date)
 		VALUES (:feed_id, :guid, :title, :link, :content, :pub_date)
 	`, sql.Named("feed_id", feedID), sql.Named("guid", guid), sql.Named("title", title),
 		sql.Named("link", link), sql.Named("content", content), sql.Named("pub_date", pubDate))
-	if err != nil {
-		return nil, err
-	}
-
-	id, err := result.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
@@ -143,19 +138,13 @@ func (s *Store) BatchCreateItemsIgnore(feedID int64, inputs []BatchCreateItemInp
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Prepare(`
-		INSERT INTO items (feed_id, guid, title, link, content, pub_date)
-		VALUES (:feed_id, :guid, :title, :link, :content, :pub_date)
-		ON CONFLICT(feed_id, guid) DO NOTHING
-	`)
-	if err != nil {
-		return 0, err
-	}
-	defer stmt.Close()
-
 	created := 0
 	for _, input := range inputs {
-		result, err := stmt.Exec(
+		result, err := s.execWith(tx, `
+			INSERT INTO items (feed_id, guid, title, link, content, pub_date)
+			VALUES (:feed_id, :guid, :title, :link, :content, :pub_date)
+			ON CONFLICT(feed_id, guid) DO NOTHING
+		`,
 			sql.Named("feed_id", feedID),
 			sql.Named("guid", input.GUID),
 			sql.Named("title", input.Title),
@@ -184,7 +173,7 @@ func (s *Store) BatchCreateItemsIgnore(feedID int64, inputs []BatchCreateItemInp
 }
 
 func (s *Store) UpdateItemUnread(id int64, unread bool) error {
-	result, err := s.db.Exec(`UPDATE items SET unread = :unread WHERE id = :id`,
+	result, err := s.exec(`UPDATE items SET unread = :unread WHERE id = :id`,
 		sql.Named("unread", boolToInt(unread)), sql.Named("id", id))
 	if err != nil {
 		return err
@@ -233,7 +222,7 @@ func (s *Store) batchUpdateItemsUnreadChunk(ids []int64, unread bool) error {
 	}
 
 	query := fmt.Sprintf(`UPDATE items SET unread = :unread WHERE id IN (%s)`, strings.Join(placeholders, ","))
-	_, err := s.db.Exec(query, args...)
+	_, err := s.exec(query, args...)
 	return err
 }
 
@@ -241,15 +230,15 @@ func (s *Store) batchUpdateItemsUnreadChunk(ids []int64, unread bool) error {
 // If feedID is non-nil, only marks items from that specific feed.
 func (s *Store) MarkAllAsRead(feedID *int64) error {
 	if feedID != nil {
-		_, err := s.db.Exec(`UPDATE items SET unread = 0 WHERE feed_id = :feed_id`, sql.Named("feed_id", *feedID))
+		_, err := s.exec(`UPDATE items SET unread = 0 WHERE feed_id = :feed_id`, sql.Named("feed_id", *feedID))
 		return err
 	}
-	_, err := s.db.Exec(`UPDATE items SET unread = 0`)
+	_, err := s.exec(`UPDATE items SET unread = 0`)
 	return err
 }
 
 func (s *Store) MarkGroupAsRead(groupID int64) error {
-	_, err := s.db.Exec(`
+	_, err := s.exec(`
 		UPDATE items
 		SET unread = 0
 		WHERE feed_id IN (
@@ -262,7 +251,7 @@ func (s *Store) MarkGroupAsRead(groupID int64) error {
 }
 
 func (s *Store) MarkFeedAsReadBefore(feedID, before int64) error {
-	_, err := s.db.Exec(`
+	_, err := s.exec(`
 		UPDATE items
 		SET unread = 0
 		WHERE feed_id = :feed_id
@@ -272,7 +261,7 @@ func (s *Store) MarkFeedAsReadBefore(feedID, before int64) error {
 }
 
 func (s *Store) MarkGroupAsReadBefore(groupID, before int64) error {
-	_, err := s.db.Exec(`
+	_, err := s.exec(`
 		UPDATE items
 		SET unread = 0
 		WHERE feed_id IN (
@@ -286,7 +275,7 @@ func (s *Store) MarkGroupAsReadBefore(groupID, before int64) error {
 }
 
 func (s *Store) MarkAllAsReadBefore(before int64) error {
-	_, err := s.db.Exec(`
+	_, err := s.exec(`
 		UPDATE items
 		SET unread = 0
 		WHERE (CASE WHEN pub_date > 0 THEN pub_date ELSE created_at END) <= :before
@@ -295,7 +284,7 @@ func (s *Store) MarkAllAsReadBefore(before int64) error {
 }
 
 func (s *Store) ListUnreadItemIDs() ([]int64, error) {
-	rows, err := s.db.Query(`
+	rows, err := s.query(`
 		SELECT id
 		FROM items
 		WHERE unread = 1
@@ -365,7 +354,7 @@ func (s *Store) ListFeverItems(params ListFeverItemsParams) ([]*model.Item, erro
 		args = append(args, sql.Named("limit", params.Limit))
 	}
 
-	rows, err := s.db.Query(query, args...)
+	rows, err := s.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -387,7 +376,7 @@ func (s *Store) ListFeverItems(params ListFeverItemsParams) ([]*model.Item, erro
 
 func (s *Store) ItemExists(feedID int64, guid string) (bool, error) {
 	var exists bool
-	err := s.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM items WHERE feed_id = :feed_id AND guid = :guid)`,
+	err := s.queryRow(`SELECT EXISTS(SELECT 1 FROM items WHERE feed_id = :feed_id AND guid = :guid)`,
 		sql.Named("feed_id", feedID), sql.Named("guid", guid)).Scan(&exists)
 	return exists, err
 }
@@ -400,56 +389,11 @@ type SearchItemResult struct {
 }
 
 func (s *Store) SearchItems(query string, limit int) ([]*SearchItemResult, error) {
-	ftsQuery := buildFTSQuery(query)
-	if ftsQuery == "" {
-		return s.searchItemsLike(query, limit)
-	}
-
-	rows, err := s.db.Query(`
-		SELECT i.id, i.feed_id, i.title, i.pub_date
-		FROM items_fts
-		INNER JOIN items i ON i.id = items_fts.rowid
-		WHERE items_fts MATCH :query
-		ORDER BY i.pub_date DESC, i.id DESC
-		LIMIT :limit
-	`, sql.Named("query", ftsQuery), sql.Named("limit", limit))
-	if err != nil {
-		return s.searchItemsLike(query, limit)
-	}
-	defer rows.Close()
-
-	items := []*SearchItemResult{}
-	for rows.Next() {
-		i := &SearchItemResult{}
-		if err := rows.Scan(&i.ID, &i.FeedID, &i.Title, &i.PubDate); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	return items, rows.Err()
-}
-
-func buildFTSQuery(query string) string {
-	parts := strings.Fields(strings.TrimSpace(query))
-	if len(parts) == 0 {
-		return ""
-	}
-
-	terms := make([]string, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		part = strings.ReplaceAll(part, `"`, `""`)
-		terms = append(terms, `"`+part+`"*`)
-	}
-
-	return strings.Join(terms, " AND ")
+	return s.searchItemsLike(query, limit)
 }
 
 func (s *Store) searchItemsLike(query string, limit int) ([]*SearchItemResult, error) {
-	rows, err := s.db.Query(`
+	rows, err := s.query(`
 		SELECT id, feed_id, title, pub_date
 		FROM items
 		WHERE title LIKE :query OR content LIKE :query
@@ -497,6 +441,6 @@ func (s *Store) CountItems(params ListItemsParams) (int, error) {
 	}
 
 	var count int
-	err := s.db.QueryRow(query, args...).Scan(&count)
+	err := s.queryRow(query, args...).Scan(&count)
 	return count, err
 }

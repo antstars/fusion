@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Store) ListFeeds() ([]*model.Feed, error) {
-	rows, err := s.db.Query(`
+	rows, err := s.query(`
 		SELECT f.id, f.group_id, f.name, f.link, f.site_url,
 		       f.suspended, f.proxy, f.created_at, f.updated_at,
 		       COALESCE(fs.etag, ''), COALESCE(fs.last_modified, ''), COALESCE(fs.cache_control, ''),
@@ -75,7 +75,7 @@ func (s *Store) ListFeeds() ([]*model.Feed, error) {
 func (s *Store) GetFeed(id int64) (*model.Feed, error) {
 	f := &model.Feed{}
 	var suspended int
-	err := s.db.QueryRow(`
+	err := s.queryRow(`
 		SELECT f.id, f.group_id, f.name, f.link, f.site_url,
 		       f.suspended, f.proxy, f.created_at, f.updated_at,
 		       COALESCE(fs.etag, ''), COALESCE(fs.last_modified, ''), COALESCE(fs.cache_control, ''),
@@ -126,7 +126,7 @@ func (s *Store) CreateFeed(groupID int64, name, link, siteURL, proxy string) (*m
 	}
 	defer tx.Rollback()
 
-	result, err := tx.Exec(`
+	id, err := s.insertAndReturnID(tx, `
 		INSERT INTO feeds (group_id, name, link, site_url, proxy)
 		VALUES (:group_id, :name, :link, :site_url, :proxy)
 	`, sql.Named("group_id", groupID), sql.Named("name", name), sql.Named("link", link),
@@ -135,12 +135,7 @@ func (s *Store) CreateFeed(groupID int64, name, link, siteURL, proxy string) (*m
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := tx.Exec(`
+	if _, err := s.execWith(tx, `
 		INSERT INTO feed_fetch_state (feed_id, next_check_at)
 		VALUES (:feed_id, unixepoch())
 	`, sql.Named("feed_id", id)); err != nil {
@@ -162,7 +157,7 @@ type SearchFeedResult struct {
 }
 
 func (s *Store) SearchFeeds(query string) ([]*SearchFeedResult, error) {
-	rows, err := s.db.Query(`
+	rows, err := s.query(`
 		SELECT id, name, link, site_url
 		FROM feeds
 		WHERE name LIKE :query
@@ -237,7 +232,7 @@ func (s *Store) UpdateFeed(id int64, params UpdateFeedParams) error {
 
 	setClauses = append(setClauses, "updated_at = unixepoch()")
 	query := fmt.Sprintf("UPDATE feeds SET %s WHERE id = :id", strings.Join(setClauses, ", "))
-	result, err := tx.Exec(query, args...)
+	result, err := s.execWith(tx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -250,7 +245,7 @@ func (s *Store) UpdateFeed(id int64, params UpdateFeedParams) error {
 	}
 
 	if params.Link != nil {
-		if _, err := tx.Exec(`
+		if _, err := s.execWith(tx, `
 			INSERT INTO feed_fetch_state (
 				feed_id,
 				etag,
@@ -315,18 +310,18 @@ func (s *Store) DeleteFeed(id int64) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`
+	if _, err := s.execWith(tx, `
 		UPDATE bookmarks SET item_id = NULL
 		WHERE item_id IN (SELECT id FROM items WHERE feed_id = :feed_id)
 	`, sql.Named("feed_id", id)); err != nil {
 		return err
 	}
 
-	if _, err := tx.Exec(`DELETE FROM items WHERE feed_id = :feed_id`, sql.Named("feed_id", id)); err != nil {
+	if _, err := s.execWith(tx, `DELETE FROM items WHERE feed_id = :feed_id`, sql.Named("feed_id", id)); err != nil {
 		return err
 	}
 
-	result, err := tx.Exec(`DELETE FROM feeds WHERE id = :id`, sql.Named("id", id))
+	result, err := s.execWith(tx, `DELETE FROM feeds WHERE id = :id`, sql.Named("id", id))
 	if err != nil {
 		return err
 	}
@@ -353,7 +348,7 @@ type UpdateFeedFetchSuccessParams struct {
 }
 
 func (s *Store) UpdateFeedFetchSuccess(id int64, params UpdateFeedFetchSuccessParams) error {
-	_, err := s.db.Exec(`
+	_, err := s.exec(`
 		INSERT INTO feed_fetch_state (
 			feed_id,
 			etag,
@@ -431,7 +426,7 @@ func (s *Store) UpdateFeedFetchFailure(id int64, params UpdateFeedFetchFailurePa
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`
+	if _, err := s.execWith(tx, `
 		INSERT INTO feed_fetch_state (
 			feed_id,
 			last_checked_at,
@@ -476,7 +471,7 @@ func (s *Store) UpdateFeedFetchFailure(id int64, params UpdateFeedFetchFailurePa
 	}
 
 	var newFailures int64
-	if err := tx.QueryRow(`
+	if err := s.queryRowWith(tx, `
 		SELECT consecutive_failures
 		FROM feed_fetch_state
 		WHERE feed_id = :feed_id
@@ -494,7 +489,7 @@ func (s *Store) UpdateFeedFetchFailure(id int64, params UpdateFeedFetchFailurePa
 		0,
 	)
 
-	if _, err := tx.Exec(`
+	if _, err := s.execWith(tx, `
 		UPDATE feed_fetch_state
 		SET next_check_at = :next_check_at, updated_at = unixepoch()
 		WHERE feed_id = :feed_id
@@ -511,7 +506,7 @@ func (s *Store) UpdateFeedSiteURLIfEmpty(id int64, siteURL string) error {
 		return nil
 	}
 
-	_, err := s.db.Exec(`
+	_, err := s.exec(`
 		UPDATE feeds
 		SET site_url = :site_url, updated_at = unixepoch()
 		WHERE id = :id AND (site_url IS NULL OR TRIM(site_url) = '')
@@ -549,26 +544,6 @@ func (s *Store) BatchCreateFeeds(inputs []BatchCreateFeedsInput) (*BatchCreateFe
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Prepare(`
-		INSERT INTO feeds (group_id, name, link, site_url, proxy)
-		VALUES (:group_id, :name, :link, :site_url, '')
-		ON CONFLICT(link) DO NOTHING
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-
-	stateStmt, err := tx.Prepare(`
-		INSERT INTO feed_fetch_state (feed_id, next_check_at)
-		VALUES (:feed_id, unixepoch())
-		ON CONFLICT(feed_id) DO UPDATE SET next_check_at = excluded.next_check_at, updated_at = unixepoch()
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer stateStmt.Close()
-
 	seenLinks := make(map[string]bool, len(inputs))
 
 	for _, input := range inputs {
@@ -578,7 +553,7 @@ func (s *Store) BatchCreateFeeds(inputs []BatchCreateFeedsInput) (*BatchCreateFe
 		}
 		seenLinks[input.Link] = true
 
-		res, err := stmt.Exec(
+		id, err := s.createFeedIfNotExists(tx,
 			sql.Named("group_id", input.GroupID),
 			sql.Named("name", input.Name),
 			sql.Named("link", input.Link),
@@ -588,24 +563,16 @@ func (s *Store) BatchCreateFeeds(inputs []BatchCreateFeedsInput) (*BatchCreateFe
 			result.Errors = append(result.Errors, fmt.Sprintf("failed to create %s: %v", input.Link, err))
 			continue
 		}
-
-		affected, err := res.RowsAffected()
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("failed to inspect result for %s: %v", input.Link, err))
-			continue
-		}
-		if affected == 0 {
+		if id == 0 {
 			result.Errors = append(result.Errors, fmt.Sprintf("duplicate feed: %s", input.Link))
 			continue
 		}
 
-		id, err := res.LastInsertId()
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("failed to get id for %s: %v", input.Link, err))
-			continue
-		}
-
-		if _, err := stateStmt.Exec(sql.Named("feed_id", id)); err != nil {
+		if _, err := s.execWith(tx, `
+			INSERT INTO feed_fetch_state (feed_id, next_check_at)
+			VALUES (:feed_id, unixepoch())
+			ON CONFLICT(feed_id) DO UPDATE SET next_check_at = excluded.next_check_at, updated_at = unixepoch()
+		`, sql.Named("feed_id", id)); err != nil {
 			return nil, fmt.Errorf("init fetch state for %s: %w", input.Link, err)
 		}
 
@@ -618,4 +585,18 @@ func (s *Store) BatchCreateFeeds(inputs []BatchCreateFeedsInput) (*BatchCreateFe
 	}
 
 	return result, nil
+}
+
+func (s *Store) createFeedIfNotExists(tx *sql.Tx, args ...any) (int64, error) {
+	query := `
+		INSERT INTO feeds (group_id, name, link, site_url, proxy)
+		VALUES (:group_id, :name, :link, :site_url, '')
+		ON CONFLICT(link) DO NOTHING
+	`
+	var id int64
+	err := s.queryRowWith(tx, query+" RETURNING id", args...).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	return id, err
 }

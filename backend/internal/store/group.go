@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Store) ListGroups() ([]*model.Group, error) {
-	rows, err := s.db.Query(`
+	rows, err := s.query(`
 		SELECT id, name, created_at, updated_at
 		FROM groups
 		ORDER BY id
@@ -32,7 +32,7 @@ func (s *Store) ListGroups() ([]*model.Group, error) {
 
 func (s *Store) GetGroup(id int64) (*model.Group, error) {
 	g := &model.Group{}
-	err := s.db.QueryRow(`
+	err := s.queryRow(`
 		SELECT id, name, created_at, updated_at
 		FROM groups
 		WHERE id = :id
@@ -47,14 +47,9 @@ func (s *Store) GetGroup(id int64) (*model.Group, error) {
 }
 
 func (s *Store) CreateGroup(name string) (*model.Group, error) {
-	result, err := s.db.Exec(`
+	id, err := s.insertAndReturnID(s.db, `
 		INSERT INTO groups (name) VALUES (:name)
 	`, sql.Named("name", name))
-	if err != nil {
-		return nil, err
-	}
-
-	id, err := result.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +58,7 @@ func (s *Store) CreateGroup(name string) (*model.Group, error) {
 }
 
 func (s *Store) UpdateGroup(id int64, name string) error {
-	result, err := s.db.Exec(`
+	result, err := s.exec(`
 		UPDATE groups
 		SET name = :name, updated_at = unixepoch()
 		WHERE id = :id
@@ -94,11 +89,11 @@ func (s *Store) DeleteGroup(id int64) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`UPDATE feeds SET group_id = 1 WHERE group_id = :id`, sql.Named("id", id)); err != nil {
+	if _, err := s.execWith(tx, `UPDATE feeds SET group_id = 1 WHERE group_id = :id`, sql.Named("id", id)); err != nil {
 		return err
 	}
 
-	result, err := tx.Exec(`DELETE FROM groups WHERE id = :id`, sql.Named("id", id))
+	result, err := s.execWith(tx, `DELETE FROM groups WHERE id = :id`, sql.Named("id", id))
 	if err != nil {
 		return err
 	}

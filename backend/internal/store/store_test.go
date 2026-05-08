@@ -1,7 +1,7 @@
 package store
 
 import (
-	"path/filepath"
+	"os"
 	"testing"
 
 	"github.com/0x2E/fusion/internal/model"
@@ -17,15 +17,31 @@ func closeStore(t *testing.T, store *Store) {
 func setupTestDB(t *testing.T) (*Store, string) {
 	t.Helper()
 
-	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "test.db")
+	databaseURL := os.Getenv("FUSION_TEST_POSTGRES_URL")
+	if databaseURL == "" {
+		t.Skip("FUSION_TEST_POSTGRES_URL is not set")
+	}
 
-	store, err := New(dbPath)
+	store, err := New(databaseURL)
 	if err != nil {
 		t.Fatalf("failed to create test database: %v", err)
 	}
+	resetTestDB(t, store)
 
-	return store, dbPath
+	return store, databaseURL
+}
+
+func resetTestDB(t *testing.T, store *Store) {
+	t.Helper()
+
+	if _, err := store.db.Exec(`
+		TRUNCATE TABLE bookmarks, items, feed_fetch_state, feeds, groups RESTART IDENTITY CASCADE;
+		INSERT INTO groups (id, name) VALUES (1, 'Default');
+		SELECT setval(pg_get_serial_sequence('groups', 'id'), 1);
+	`); err != nil {
+		_ = store.Close()
+		t.Fatalf("reset test database: %v", err)
+	}
 }
 
 func mustCreateGroup(t *testing.T, store *Store, name string) *model.Group {
@@ -73,9 +89,12 @@ func mustCreateBookmark(t *testing.T, store *Store, itemID *int64, link, title, 
 }
 
 func TestNew(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
+	databaseURL := os.Getenv("FUSION_TEST_POSTGRES_URL")
+	if databaseURL == "" {
+		t.Skip("FUSION_TEST_POSTGRES_URL is not set")
+	}
 
-	store, err := New(dbPath)
+	store, err := New(databaseURL)
 	if err != nil {
 		t.Fatalf("New() failed: %v", err)
 	}
@@ -101,11 +120,8 @@ func TestClose(t *testing.T) {
 }
 
 func TestNewInvalidPath(t *testing.T) {
-	// Use an invalid path that should fail
-	invalidPath := "/nonexistent/directory/test.db"
-
-	_, err := New(invalidPath)
+	_, err := New("postgres://invalid:invalid@127.0.0.1:1/invalid?sslmode=disable")
 	if err == nil {
-		t.Error("expected New() to fail with invalid path, but it succeeded")
+		t.Error("expected New() to fail with invalid database URL, but it succeeded")
 	}
 }

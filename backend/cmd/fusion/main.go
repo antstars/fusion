@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/0x2E/fusion/internal/cache"
 	"github.com/0x2E/fusion/internal/config"
 	"github.com/0x2E/fusion/internal/handler"
 	"github.com/0x2E/fusion/internal/pull"
@@ -35,14 +36,25 @@ func run() error {
 	setupLogger(cfg)
 	gin.SetMode(gin.ReleaseMode)
 
-	st, err := store.New(cfg.DBPath)
+	st, err := store.New(cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
 	defer st.Close()
 
 	puller := pull.New(st, cfg)
-	h, err := handler.New(st, cfg, puller)
+	responseCache := cache.Cache(cache.NoopCache{})
+	if cfg.RedisURL != "" && cfg.CacheTTLSeconds > 0 {
+		redisCache, err := cache.NewRedis(cfg.RedisURL)
+		if err != nil {
+			slog.Warn("redis cache disabled", "error", err)
+		} else {
+			defer redisCache.Close()
+			responseCache = redisCache
+		}
+	}
+
+	h, err := handler.NewWithCache(st, cfg, puller, responseCache)
 	if err != nil {
 		return err
 	}

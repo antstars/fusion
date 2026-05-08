@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -23,11 +22,12 @@ func (noopPuller) RefreshAll(context.Context) (int, error) { return 0, nil }
 func newFeverTestHandler(t *testing.T) (*Handler, *store.Store) {
 	t.Helper()
 
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	st, err := store.New(dbPath)
+	databaseURL := requirePostgresTestURL(t)
+	st, err := store.New(databaseURL)
 	if err != nil {
 		t.Fatalf("create store: %v", err)
 	}
+	resetPostgresTestDB(t, databaseURL)
 
 	cfg := &config.Config{
 		Password:       "secret",

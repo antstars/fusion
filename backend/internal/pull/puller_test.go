@@ -2,21 +2,22 @@ package pull
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
+	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/0x2E/fusion/internal/config"
 	"github.com/0x2E/fusion/internal/store"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func TestRefreshFeedPreservesValidatorsWhen304OmitHeaders(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	st, err := store.New(dbPath)
+	st, err := newTestStore(t)
 	if err != nil {
 		t.Fatalf("create store: %v", err)
 	}
@@ -91,8 +92,7 @@ func TestRefreshFeedPreservesValidatorsWhen304OmitHeaders(t *testing.T) {
 }
 
 func TestRefreshAllWaitsForRunningJobs(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	st, err := store.New(dbPath)
+	st, err := newTestStore(t)
 	if err != nil {
 		t.Fatalf("create store: %v", err)
 	}
@@ -142,5 +142,38 @@ func TestRefreshAllWaitsForRunningJobs(t *testing.T) {
 		if feed.FetchState.LastSuccessAt <= 0 {
 			t.Fatalf("feed %d last_success_at = %d, want > 0", feed.ID, feed.FetchState.LastSuccessAt)
 		}
+	}
+}
+
+func newTestStore(t *testing.T) (*store.Store, error) {
+	t.Helper()
+
+	databaseURL := os.Getenv("FUSION_TEST_POSTGRES_URL")
+	if databaseURL == "" {
+		t.Skip("FUSION_TEST_POSTGRES_URL is not set")
+	}
+	st, err := store.New(databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	resetTestDB(t, databaseURL)
+	return st, nil
+}
+
+func resetTestDB(t *testing.T, databaseURL string) {
+	t.Helper()
+
+	db, err := sql.Open("pgx", databaseURL)
+	if err != nil {
+		t.Fatalf("open postgres test database: %v", err)
+	}
+	defer db.Close()
+
+	if _, err := db.Exec(`
+		TRUNCATE TABLE bookmarks, items, feed_fetch_state, feeds, groups RESTART IDENTITY CASCADE;
+		INSERT INTO groups (id, name) VALUES (1, 'Default');
+		SELECT setval(pg_get_serial_sequence('groups', 'id'), 1);
+	`); err != nil {
+		t.Fatalf("reset postgres test database: %v", err)
 	}
 }

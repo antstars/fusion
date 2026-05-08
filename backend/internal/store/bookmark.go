@@ -25,7 +25,7 @@ func (s *Store) ListBookmarks(limit, offset int) ([]*model.Bookmark, error) {
 		args = append(args, sql.Named("offset", offset))
 	}
 
-	rows, err := s.db.Query(query, args...)
+	rows, err := s.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (s *Store) ListBookmarks(limit, offset int) ([]*model.Bookmark, error) {
 
 func (s *Store) GetBookmark(id int64) (*model.Bookmark, error) {
 	b := &model.Bookmark{}
-	err := s.db.QueryRow(`
+	err := s.queryRow(`
 		SELECT id, item_id, link, title, content, pub_date, feed_name, created_at
 		FROM bookmarks
 		WHERE id = :id
@@ -61,7 +61,7 @@ func (s *Store) GetBookmark(id int64) (*model.Bookmark, error) {
 // CreateBookmark saves a snapshot of content. itemID may be nil if the
 // original item was deleted, in which case the bookmark preserves the content.
 func (s *Store) CreateBookmark(itemID *int64, link, title, content string, pubDate int64, feedName string) (*model.Bookmark, error) {
-	result, err := s.db.Exec(`
+	id, err := s.insertAndReturnID(s.db, `
 		INSERT INTO bookmarks (item_id, link, title, content, pub_date, feed_name)
 		VALUES (:item_id, :link, :title, :content, :pub_date, :feed_name)
 	`, sql.Named("item_id", itemID), sql.Named("link", link), sql.Named("title", title),
@@ -70,16 +70,11 @@ func (s *Store) CreateBookmark(itemID *int64, link, title, content string, pubDa
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
-
 	return s.GetBookmark(id)
 }
 
 func (s *Store) DeleteBookmark(id int64) error {
-	result, err := s.db.Exec(`DELETE FROM bookmarks WHERE id = :id`, sql.Named("id", id))
+	result, err := s.exec(`DELETE FROM bookmarks WHERE id = :id`, sql.Named("id", id))
 	if err != nil {
 		return err
 	}
@@ -94,12 +89,12 @@ func (s *Store) DeleteBookmark(id int64) error {
 }
 
 func (s *Store) DeleteBookmarkByLink(link string) error {
-	_, err := s.db.Exec(`DELETE FROM bookmarks WHERE link = :link`, sql.Named("link", link))
+	_, err := s.exec(`DELETE FROM bookmarks WHERE link = :link`, sql.Named("link", link))
 	return err
 }
 
 func (s *Store) UpdateBookmarkItemIDByLink(itemID int64, link string) error {
-	_, err := s.db.Exec(`
+	_, err := s.exec(`
 		UPDATE bookmarks
 		SET item_id = :item_id
 		WHERE link = :link
@@ -109,18 +104,18 @@ func (s *Store) UpdateBookmarkItemIDByLink(itemID int64, link string) error {
 
 func (s *Store) BookmarkExists(link string) (bool, error) {
 	var exists bool
-	err := s.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM bookmarks WHERE link = :link)`, sql.Named("link", link)).Scan(&exists)
+	err := s.queryRow(`SELECT EXISTS(SELECT 1 FROM bookmarks WHERE link = :link)`, sql.Named("link", link)).Scan(&exists)
 	return exists, err
 }
 
 func (s *Store) CountBookmarks() (int, error) {
 	var count int
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM bookmarks`).Scan(&count)
+	err := s.queryRow(`SELECT COUNT(*) FROM bookmarks`).Scan(&count)
 	return count, err
 }
 
 func (s *Store) ListSavedItemIDs() ([]int64, error) {
-	rows, err := s.db.Query(`
+	rows, err := s.query(`
 		SELECT item_id
 		FROM bookmarks
 		WHERE item_id IS NOT NULL

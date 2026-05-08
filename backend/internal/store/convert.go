@@ -1,6 +1,6 @@
 package store
 
-// boolToInt converts Go bool to SQLite INTEGER (0/1).
+// boolToInt converts Go bool to database INTEGER (0/1).
 func boolToInt(b bool) int {
 	if b {
 		return 1
@@ -8,7 +8,7 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-// intToBool converts SQLite INTEGER (0/1) to Go bool.
+// intToBool converts database INTEGER (0/1) to Go bool.
 func intToBool(i int) bool {
 	return i != 0
 }

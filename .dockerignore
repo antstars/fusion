@@ -1,5 +1,10 @@
-*
-!Dockerfile
-!.dockerignore
-!build/
-!build/**
+.git
+.github
+.codex-*
+build
+dist
+data
+frontend/dist
+frontend/node_modules
+backend/internal/web/dist/*
+!backend/internal/web/dist/.keep

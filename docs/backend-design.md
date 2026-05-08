@@ -13,7 +13,8 @@ Fusion backend runs two long-lived services in one process:
 1. HTTP API server (Gin)
 2. Feed pull worker (periodic and manual refresh)
 
-Both services share the same SQLite store.
+Both services share the same PostgreSQL store. PostgreSQL is required and must
+be provided as an external service.
 
 ## 3. Tech stack
 
@@ -21,8 +22,9 @@ Both services share the same SQLite store.
 | -------------- | ------------------------------------- |
 | Language       | Go 1.25                               |
 | HTTP framework | Gin                                   |
-| Database       | SQLite (`modernc.org/sqlite`)         |
-| Migrations     | Embedded SQL files                    |
+| Database       | PostgreSQL                            |
+| Migrations     | PostgreSQL bootstrap schema           |
+| Read cache     | Optional Redis response cache         |
 | Feed parser    | `github.com/mmcdole/gofeed`           |
 | Feed discovery | `github.com/0x2E/feedfinder`          |
 | Auth           | Password session auth + optional OIDC |
@@ -45,15 +47,16 @@ backend/
 
 ## 5. Database schema (current)
 
-Source of truth:
+PostgreSQL deployments initialize the current schema at startup and record the
+baseline migration versions in `schema_migrations`.
 
-- `backend/internal/store/migrations/001_initial.sql`
-- `backend/internal/store/migrations/002_feed_fetch_state.sql`
+Database connection is controlled by `FUSION_DATABASE_URL`.
 
-Legacy compatibility: when an old pre-`schema_migrations` database is detected,
-backend first creates a timestamped `.bak` backup, builds a fresh temporary
-database with the current schema, imports legacy `groups/feeds/items` data,
-atomically swaps files, then records baseline version `1`.
+Redis read caching is optional. When `FUSION_REDIS_URL` is set and
+`FUSION_CACHE_TTL_SECONDS` is greater than zero, authenticated GET responses for
+groups, feeds, items, bookmarks, and search are cached. Successful mutating API
+requests invalidate the read cache. Redis failures are logged and requests fall
+back to the database.
 
 ### groups
 
@@ -116,10 +119,9 @@ erDiagram
 - Unique: `(feed_id, guid)`
 - Indexes: unread partial index, `pub_date` index, `(feed_id, unread)` index
 
-### items full-text search
+### items search
 
-- Virtual table: `items_fts` (FTS5 on `title`, `content`)
-- Triggers keep `items_fts` synchronized with `items`
+- Search uses PostgreSQL `ILIKE` matching on `title` and `content`.
 
 ### bookmarks
 
