@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     ports:
-      - "12180:8080"
+      - "12181:8080"
     restart: unless-stopped
     container_name: fusion_rss
     volumes:
