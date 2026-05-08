@@ -8,5 +8,4 @@ services:
       - "12181:8080"
     restart: unless-stopped
     container_name: fusion
-    volumes:
-      - ./data:/data
+
