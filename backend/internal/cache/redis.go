@@ -7,11 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0x2E/fusion/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 
 type RedisCache struct {
-	client *redis.Client
+	client    *redis.Client
+	scanCount int64
 }
 
 func NewRedis(redisURL string) (*RedisCache, error) {
@@ -20,6 +22,32 @@ func NewRedis(redisURL string) (*RedisCache, error) {
 		return nil, fmt.Errorf("parse redis url: %w", err)
 	}
 
+	return newRedisClient(options, 500)
+}
+
+func NewRedisWithConfig(cfg config.RedisConfig) (*RedisCache, error) {
+	if strings.TrimSpace(cfg.URL) != "" {
+		options, err := redis.ParseURL(strings.TrimSpace(cfg.URL))
+		if err != nil {
+			return nil, fmt.Errorf("parse redis url: %w", err)
+		}
+		return newRedisClient(options, cfg.ScanCount)
+	}
+
+	return newRedisClient(&redis.Options{
+		Addr:         cfg.Addr,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		PoolSize:     cfg.PoolSize,
+		MinIdleConns: cfg.MinIdleConns,
+		DialTimeout:  cfg.DialTimeout,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+		PoolTimeout:  cfg.PoolTimeout,
+	}, cfg.ScanCount)
+}
+
+func newRedisClient(options *redis.Options, scanCount int64) (*RedisCache, error) {
 	client := redis.NewClient(options)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -29,7 +57,7 @@ func NewRedis(redisURL string) (*RedisCache, error) {
 		return nil, fmt.Errorf("ping redis: %w", err)
 	}
 
-	return &RedisCache{client: client}, nil
+	return &RedisCache{client: client, scanCount: scanCount}, nil
 }
 
 func (c *RedisCache) Get(ctx context.Context, key string) ([]byte, error) {
@@ -48,7 +76,7 @@ func (c *RedisCache) Set(ctx context.Context, key string, value []byte, ttl time
 }
 
 func (c *RedisCache) DeletePrefix(ctx context.Context, prefix string) error {
-	iter := c.client.Scan(ctx, 0, prefix+"*", 100).Iterator()
+	iter := c.client.Scan(ctx, 0, prefix+"*", c.scanCount).Iterator()
 	keys := make([]string, 0, 100)
 	for iter.Next(ctx) {
 		keys = append(keys, iter.Val())

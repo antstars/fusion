@@ -50,11 +50,17 @@ backend/
 PostgreSQL deployments initialize the current schema at startup and record the
 baseline migration versions in `schema_migrations`.
 
-Database connection is controlled by `FUSION_DATABASE_URL`.
+Database connection is controlled by structured `FUSION_DATABASE_*` settings.
+`FUSION_DATABASE_URL` is supported as an advanced override and takes precedence
+when set. PostgreSQL pool limits are configured with
+`FUSION_DATABASE_MAX_OPEN_CONNS`, `FUSION_DATABASE_MAX_IDLE_CONNS`,
+`FUSION_DATABASE_CONN_MAX_LIFETIME_MINUTES`, and
+`FUSION_DATABASE_CONN_MAX_IDLE_TIME_MINUTES`.
 
-Redis read caching is optional. When `FUSION_REDIS_URL` is set and
+Redis read caching is optional. When `FUSION_REDIS_ENABLED=true` and
 `FUSION_CACHE_TTL_SECONDS` is greater than zero, authenticated GET responses for
-groups, feeds, items, bookmarks, and search are cached. Successful mutating API
+groups, feeds, items, bookmarks, and search are cached. `FUSION_REDIS_URL` is an
+advanced override that also enables Redis when set. Successful mutating API
 requests invalidate the read cache. Redis failures are logged and requests fall
 back to the database.
 

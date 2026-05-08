@@ -89,7 +89,7 @@ See [Contributing](./CONTRIBUTING.md).
 Most users only need one setting to get started:
 
 - Set `FUSION_PASSWORD`.
-- Set `FUSION_DATABASE_URL` to an external PostgreSQL database.
+- Configure external PostgreSQL with `FUSION_DATABASE_HOST`, `FUSION_DATABASE_USER`, `FUSION_DATABASE_PASSWORD`, and `FUSION_DATABASE_NAME`.
 - For local trusted environments only: set `FUSION_ALLOW_EMPTY_PASSWORD=true` to run without auth when OIDC is also disabled.
 
 Then configure based on your goal:
@@ -98,8 +98,9 @@ Then configure based on your goal:
   - Optional: `FUSION_PORT`
 - Use Docker Compose
   - Copy `.env.example` to `.env`
-  - Configure `FUSION_DATABASE_URL` for your external PostgreSQL service
-  - Configure `FUSION_REDIS_URL` only when you provide an external Redis service
+  - Configure the structured `FUSION_DATABASE_*` settings for your external PostgreSQL service
+  - Optional advanced override: set `FUSION_DATABASE_URL` instead of the structured database fields
+  - Enable Redis with `FUSION_REDIS_ENABLED=true` and structured `FUSION_REDIS_*` settings, or use `FUSION_REDIS_URL` as an override
 - Expose Fusion behind a reverse proxy
   - Configure: `FUSION_CORS_ALLOWED_ORIGINS`, `FUSION_TRUSTED_PROXIES`
 - Use mobile/desktop Fever clients (Reeder, Unread, FeedMe)
@@ -115,8 +116,8 @@ Then configure based on your goal:
 - Troubleshoot deployments
   - Configure: `FUSION_LOG_LEVEL`, `FUSION_LOG_FORMAT`
 - Tune read cache
-  - Configure: `FUSION_REDIS_URL`, `FUSION_CACHE_TTL_SECONDS`
-  - Leave `FUSION_REDIS_URL` empty to disable Redis caching
+  - Configure: `FUSION_REDIS_ENABLED`, `FUSION_REDIS_ADDR`, `FUSION_REDIS_DB`, `FUSION_CACHE_TTL_SECONDS`
+  - Keep `FUSION_REDIS_ENABLED=false` to disable Redis caching
 
 For the complete variable reference, see [`.env.example`](./.env.example).
 

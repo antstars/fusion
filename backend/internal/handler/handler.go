@@ -59,12 +59,16 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 	if responseCache == nil {
 		responseCache = cache.NoopCache{}
 	}
+	cacheTTLSeconds := config.Redis.CacheTTLSeconds
+	if cacheTTLSeconds == 0 {
+		cacheTTLSeconds = 120
+	}
 
 	h := &Handler{
 		store:        store,
 		config:       config,
 		cache:        responseCache,
-		cacheTTL:     time.Duration(config.CacheTTLSeconds) * time.Second,
+		cacheTTL:     time.Duration(cacheTTLSeconds) * time.Second,
 		passwordHash: passwordHash,
 		feverAPIKey:  deriveFeverAPIKey(config.FeverUsername, config.Password),
 		allowAnonAPI: strings.TrimSpace(config.Password) == "" && strings.TrimSpace(config.OIDCIssuer) == "",

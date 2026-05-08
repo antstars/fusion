@@ -24,9 +24,16 @@ cp .env.example .env
 编辑 `.env`，至少设置：
 
 ```env
-FUSION_DATABASE_URL=postgres://fusion:change-me@postgres.example.com:5432/fusion?sslmode=disable
+FUSION_DATABASE_HOST=192.168.2.6
+FUSION_DATABASE_PORT=5432
+FUSION_DATABASE_USER=postgres
+FUSION_DATABASE_PASSWORD=change-me
+FUSION_DATABASE_NAME=fusion
+FUSION_DATABASE_SSLMODE=disable
 FUSION_PASSWORD=change-me
 ```
+
+也可以使用高级覆盖项 `FUSION_DATABASE_URL`，此时会优先生效。
 
 启动：
 
@@ -42,24 +49,45 @@ http://localhost:12180
 
 ## 配置说明
 
-PostgreSQL 必填：
+PostgreSQL 必填。推荐使用结构化配置：
 
 ```env
-FUSION_DATABASE_URL=postgres://fusion:change-me@postgres.example.com:5432/fusion?sslmode=disable
+FUSION_DATABASE_HOST=192.168.2.6
+FUSION_DATABASE_PORT=5432
+FUSION_DATABASE_USER=postgres
+FUSION_DATABASE_PASSWORD=change-me
+FUSION_DATABASE_NAME=fusion
+FUSION_DATABASE_SSLMODE=disable
+FUSION_DATABASE_MAX_OPEN_CONNS=64
+FUSION_DATABASE_MAX_IDLE_CONNS=32
+FUSION_DATABASE_CONN_MAX_LIFETIME_MINUTES=30
+FUSION_DATABASE_CONN_MAX_IDLE_TIME_MINUTES=10
 ```
 
-Redis 可选。留空表示禁用缓存：
+Redis 可选。默认关闭：
 
 ```env
-FUSION_REDIS_URL=
-FUSION_CACHE_TTL_SECONDS=120
+FUSION_REDIS_ENABLED=false
 ```
 
-如果启用 Redis，请填写外部 Redis 地址：
+启用 Redis 时填写外部 Redis 配置：
 
 ```env
-FUSION_REDIS_URL=redis://redis.example.com:6379/0
+FUSION_REDIS_ENABLED=true
+FUSION_REDIS_ADDR=192.168.2.6:6379
+FUSION_REDIS_PASSWORD=
+FUSION_REDIS_DB=15
+FUSION_CACHE_TTL_SECONDS=600
+FUSION_REDIS_POOL_SIZE=80
+FUSION_REDIS_MIN_IDLE_CONNS=16
+FUSION_REDIS_DIAL_TIMEOUT_SECONDS=2
+FUSION_REDIS_READ_TIMEOUT_SECONDS=2
+FUSION_REDIS_WRITE_TIMEOUT_SECONDS=2
+FUSION_REDIS_POOL_TIMEOUT_SECONDS=4
+FUSION_REDIS_SCAN_COUNT=500
 ```
+
+`FUSION_REDIS_URL` 是高级覆盖项；设置后会启用 Redis，并优先于结构化 Redis 字段。
 
 当前版本不再支持 SQLite，也不会自动迁移 SQLite 数据。
 
@@ -68,7 +96,10 @@ FUSION_REDIS_URL=redis://redis.example.com:6379/0
 从 Releases 下载对应平台的二进制后运行：
 
 ```shell
-FUSION_DATABASE_URL="postgres://fusion:change-me@localhost:5432/fusion?sslmode=disable" \
+FUSION_DATABASE_HOST="127.0.0.1" \
+FUSION_DATABASE_USER="postgres" \
+FUSION_DATABASE_PASSWORD="change-me" \
+FUSION_DATABASE_NAME="fusion" \
 FUSION_PASSWORD="fusion" \
 ./fusion
 ```
@@ -76,7 +107,10 @@ FUSION_PASSWORD="fusion" \
 Windows PowerShell：
 
 ```powershell
-$env:FUSION_DATABASE_URL="postgres://fusion:change-me@localhost:5432/fusion?sslmode=disable"
+$env:FUSION_DATABASE_HOST="127.0.0.1"
+$env:FUSION_DATABASE_USER="postgres"
+$env:FUSION_DATABASE_PASSWORD="change-me"
+$env:FUSION_DATABASE_NAME="fusion"
 $env:FUSION_PASSWORD="fusion"
 .\fusion.exe
 ```

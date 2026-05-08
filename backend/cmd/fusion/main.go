@@ -36,7 +36,7 @@ func run() error {
 	setupLogger(cfg)
 	gin.SetMode(gin.ReleaseMode)
 
-	st, err := store.New(cfg.DatabaseURL)
+	st, err := store.NewWithPool(cfg.DatabaseURL, cfg.DatabasePool)
 	if err != nil {
 		return err
 	}
@@ -44,8 +44,8 @@ func run() error {
 
 	puller := pull.New(st, cfg)
 	responseCache := cache.Cache(cache.NoopCache{})
-	if cfg.RedisURL != "" && cfg.CacheTTLSeconds > 0 {
-		redisCache, err := cache.NewRedis(cfg.RedisURL)
+	if cfg.RedisEnabled && cfg.Redis.CacheTTLSeconds > 0 {
+		redisCache, err := cache.NewRedisWithConfig(cfg.Redis)
 		if err != nil {
 			slog.Warn("redis cache disabled", "error", err)
 		} else {

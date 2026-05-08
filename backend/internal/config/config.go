@@ -6,10 +6,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
 	DatabaseURL   string
+	DatabasePool  DatabasePoolConfig
 	Password      string // Plaintext password from env
 	Port          int
 	FeverUsername string // Username used to derive Fever API key.
@@ -30,8 +32,8 @@ type Config struct {
 	LogLevel  string // Log level: DEBUG, INFO, WARN, ERROR (default: INFO)
 	LogFormat string // Log format: text, json, auto (default: auto)
 
-	RedisURL        string
-	CacheTTLSeconds int
+	RedisEnabled bool
+	Redis        RedisConfig
 
 	// OIDC Configuration (optional, enabled when OIDCIssuer is set)
 	OIDCIssuer       string // OIDC provider URL
@@ -41,20 +43,39 @@ type Config struct {
 	OIDCAllowedUser  string // Optional: restrict to specific user identity (email or sub)
 }
 
+type DatabasePoolConfig struct {
+	MaxOpenConns           int
+	MaxIdleConns           int
+	ConnMaxLifetimeMinutes int
+	ConnMaxIdleTimeMinutes int
+}
+
+type RedisConfig struct {
+	URL             string
+	Addr            string
+	Password        string
+	DB              int
+	CacheTTLSeconds int
+	PoolSize        int
+	MinIdleConns    int
+	DialTimeout     time.Duration
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	PoolTimeout     time.Duration
+	ScanCount       int64
+}
+
 func Load() (*Config, error) {
 	// Backward compatible env vars:
 	// - PASSWORD (legacy) -> FUSION_PASSWORD
 	// - PORT (legacy) -> FUSION_PORT
-	databaseURL := strings.TrimSpace(os.Getenv("FUSION_DATABASE_URL"))
-	if databaseURL == "" {
-		return nil, fmt.Errorf("FUSION_DATABASE_URL is required")
+	databaseURL, err := loadDatabaseURL()
+	if err != nil {
+		return nil, err
 	}
-	parsedURL, err := url.Parse(databaseURL)
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return nil, fmt.Errorf("invalid FUSION_DATABASE_URL")
-	}
-	if parsedURL.Scheme != "postgres" && parsedURL.Scheme != "postgresql" {
-		return nil, fmt.Errorf("invalid FUSION_DATABASE_URL: scheme must be postgres or postgresql")
+	databasePool, err := loadDatabasePool()
+	if err != nil {
+		return nil, err
 	}
 
 	password := os.Getenv("FUSION_PASSWORD")
@@ -134,24 +155,21 @@ func Load() (*Config, error) {
 		logFormat = "auto"
 	}
 
-	redisURL := strings.TrimSpace(os.Getenv("FUSION_REDIS_URL"))
-	if redisURL != "" {
-		parsedURL, err := url.Parse(redisURL)
-		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-			return nil, fmt.Errorf("invalid FUSION_REDIS_URL")
-		}
-		if parsedURL.Scheme != "redis" && parsedURL.Scheme != "rediss" {
-			return nil, fmt.Errorf("invalid FUSION_REDIS_URL: scheme must be redis or rediss")
-		}
-	}
-
-	cacheTTLSeconds, err := getEnvInt("FUSION_CACHE_TTL_SECONDS", 120, 0)
+	redisEnabled, err := getEnvBool("FUSION_REDIS_ENABLED", false)
 	if err != nil {
 		return nil, err
+	}
+	redisConfig, err := loadRedisConfig()
+	if err != nil {
+		return nil, err
+	}
+	if redisConfig.URL != "" {
+		redisEnabled = true
 	}
 
 	return &Config{
 		DatabaseURL:        databaseURL,
+		DatabasePool:       databasePool,
 		Password:           password,
 		Port:               parsedPort,
 		FeverUsername:      getEnvString("FUSION_FEVER_USERNAME", "fusion"),
@@ -167,8 +185,8 @@ func Load() (*Config, error) {
 		LoginBlock:         loginBlock,
 		LogLevel:           logLevel,
 		LogFormat:          logFormat,
-		RedisURL:           redisURL,
-		CacheTTLSeconds:    cacheTTLSeconds,
+		RedisEnabled:       redisEnabled,
+		Redis:              redisConfig,
 
 		OIDCIssuer:       os.Getenv("FUSION_OIDC_ISSUER"),
 		OIDCClientID:     os.Getenv("FUSION_OIDC_CLIENT_ID"),
@@ -187,6 +205,166 @@ func getEnvString(key, defaultVal string) string {
 	return val
 }
 
+func loadDatabaseURL() (string, error) {
+	databaseURL := strings.TrimSpace(os.Getenv("FUSION_DATABASE_URL"))
+	if databaseURL == "" {
+		host := getEnvString("FUSION_DATABASE_HOST", "")
+		if host == "" {
+			return "", fmt.Errorf("FUSION_DATABASE_HOST is required (or set FUSION_DATABASE_URL)")
+		}
+		port, err := getEnvInt("FUSION_DATABASE_PORT", 5432, 1)
+		if err != nil {
+			return "", err
+		}
+		user := getEnvString("FUSION_DATABASE_USER", "")
+		if user == "" {
+			return "", fmt.Errorf("FUSION_DATABASE_USER is required (or set FUSION_DATABASE_URL)")
+		}
+		dbName := getEnvString("FUSION_DATABASE_NAME", "")
+		if dbName == "" {
+			return "", fmt.Errorf("FUSION_DATABASE_NAME is required (or set FUSION_DATABASE_URL)")
+		}
+		sslMode := getEnvString("FUSION_DATABASE_SSLMODE", "disable")
+		if err := validatePostgresSSLMode(sslMode); err != nil {
+			return "", err
+		}
+
+		u := &url.URL{
+			Scheme: "postgres",
+			User:   url.UserPassword(user, os.Getenv("FUSION_DATABASE_PASSWORD")),
+			Host:   fmt.Sprintf("%s:%d", host, port),
+			Path:   dbName,
+		}
+		q := u.Query()
+		q.Set("sslmode", sslMode)
+		u.RawQuery = q.Encode()
+		databaseURL = u.String()
+	}
+
+	if err := validatePostgresURL(databaseURL); err != nil {
+		return "", err
+	}
+	return databaseURL, nil
+}
+
+func loadDatabasePool() (DatabasePoolConfig, error) {
+	maxOpenConns, err := getEnvInt("FUSION_DATABASE_MAX_OPEN_CONNS", 64, 1)
+	if err != nil {
+		return DatabasePoolConfig{}, err
+	}
+	maxIdleConns, err := getEnvInt("FUSION_DATABASE_MAX_IDLE_CONNS", 32, 0)
+	if err != nil {
+		return DatabasePoolConfig{}, err
+	}
+	connMaxLifetime, err := getEnvInt("FUSION_DATABASE_CONN_MAX_LIFETIME_MINUTES", 30, 0)
+	if err != nil {
+		return DatabasePoolConfig{}, err
+	}
+	connMaxIdleTime, err := getEnvInt("FUSION_DATABASE_CONN_MAX_IDLE_TIME_MINUTES", 10, 0)
+	if err != nil {
+		return DatabasePoolConfig{}, err
+	}
+
+	return DatabasePoolConfig{
+		MaxOpenConns:           maxOpenConns,
+		MaxIdleConns:           maxIdleConns,
+		ConnMaxLifetimeMinutes: connMaxLifetime,
+		ConnMaxIdleTimeMinutes: connMaxIdleTime,
+	}, nil
+}
+
+func loadRedisConfig() (RedisConfig, error) {
+	redisURL := strings.TrimSpace(os.Getenv("FUSION_REDIS_URL"))
+	if redisURL != "" {
+		if err := validateRedisURL(redisURL); err != nil {
+			return RedisConfig{}, err
+		}
+	}
+
+	db, err := getEnvInt("FUSION_REDIS_DB", 0, 0)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	cacheTTLSeconds, err := getEnvInt("FUSION_CACHE_TTL_SECONDS", 120, 0)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	poolSize, err := getEnvInt("FUSION_REDIS_POOL_SIZE", 80, 1)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	minIdleConns, err := getEnvInt("FUSION_REDIS_MIN_IDLE_CONNS", 16, 0)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	dialTimeout, err := getEnvDurationSeconds("FUSION_REDIS_DIAL_TIMEOUT_SECONDS", 2, 0)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	readTimeout, err := getEnvDurationSeconds("FUSION_REDIS_READ_TIMEOUT_SECONDS", 2, 0)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	writeTimeout, err := getEnvDurationSeconds("FUSION_REDIS_WRITE_TIMEOUT_SECONDS", 2, 0)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	poolTimeout, err := getEnvDurationSeconds("FUSION_REDIS_POOL_TIMEOUT_SECONDS", 4, 0)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+	scanCount, err := getEnvInt("FUSION_REDIS_SCAN_COUNT", 500, 1)
+	if err != nil {
+		return RedisConfig{}, err
+	}
+
+	return RedisConfig{
+		URL:             redisURL,
+		Addr:            getEnvString("FUSION_REDIS_ADDR", "127.0.0.1:6379"),
+		Password:        os.Getenv("FUSION_REDIS_PASSWORD"),
+		DB:              db,
+		CacheTTLSeconds: cacheTTLSeconds,
+		PoolSize:        poolSize,
+		MinIdleConns:    minIdleConns,
+		DialTimeout:     dialTimeout,
+		ReadTimeout:     readTimeout,
+		WriteTimeout:    writeTimeout,
+		PoolTimeout:     poolTimeout,
+		ScanCount:       int64(scanCount),
+	}, nil
+}
+
+func validatePostgresURL(databaseURL string) error {
+	parsedURL, err := url.Parse(databaseURL)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return fmt.Errorf("invalid FUSION_DATABASE_URL")
+	}
+	if parsedURL.Scheme != "postgres" && parsedURL.Scheme != "postgresql" {
+		return fmt.Errorf("invalid FUSION_DATABASE_URL: scheme must be postgres or postgresql")
+	}
+	return nil
+}
+
+func validatePostgresSSLMode(sslMode string) error {
+	switch sslMode {
+	case "disable", "allow", "prefer", "require", "verify-ca", "verify-full":
+		return nil
+	default:
+		return fmt.Errorf("invalid FUSION_DATABASE_SSLMODE")
+	}
+}
+
+func validateRedisURL(redisURL string) error {
+	parsedURL, err := url.Parse(redisURL)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return fmt.Errorf("invalid FUSION_REDIS_URL")
+	}
+	if parsedURL.Scheme != "redis" && parsedURL.Scheme != "rediss" {
+		return fmt.Errorf("invalid FUSION_REDIS_URL: scheme must be redis or rediss")
+	}
+	return nil
+}
+
 func getEnvInt(key string, defaultVal, minVal int) (int, error) {
 	val := os.Getenv(key)
 	if val == "" {
@@ -200,6 +378,14 @@ func getEnvInt(key string, defaultVal, minVal int) (int, error) {
 		return 0, fmt.Errorf("invalid %s: must be >= %d", key, minVal)
 	}
 	return parsed, nil
+}
+
+func getEnvDurationSeconds(key string, defaultVal, minVal int) (time.Duration, error) {
+	seconds, err := getEnvInt(key, defaultVal, minVal)
+	if err != nil {
+		return 0, err
+	}
+	return time.Duration(seconds) * time.Second, nil
 }
 
 func getEnvBool(key string, defaultVal bool) (bool, error) {

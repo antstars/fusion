@@ -8,7 +8,9 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
+	"github.com/0x2E/fusion/internal/config"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -17,12 +19,23 @@ type Store struct {
 }
 
 func New(databaseURL string) (*Store, error) {
+	return NewWithPool(databaseURL, config.DatabasePoolConfig{
+		MaxOpenConns:           20,
+		MaxIdleConns:           10,
+		ConnMaxLifetimeMinutes: 30,
+		ConnMaxIdleTimeMinutes: 10,
+	})
+}
+
+func NewWithPool(databaseURL string, pool config.DatabasePoolConfig) (*Store, error) {
 	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-	db.SetMaxOpenConns(20)
-	db.SetMaxIdleConns(10)
+	db.SetMaxOpenConns(pool.MaxOpenConns)
+	db.SetMaxIdleConns(pool.MaxIdleConns)
+	db.SetConnMaxLifetime(time.Duration(pool.ConnMaxLifetimeMinutes) * time.Minute)
+	db.SetConnMaxIdleTime(time.Duration(pool.ConnMaxIdleTimeMinutes) * time.Minute)
 
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
