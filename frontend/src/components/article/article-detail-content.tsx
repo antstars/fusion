@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Circle,
   CircleCheck,
@@ -70,10 +70,18 @@ export function useSelectedArticleDetail() {
     feedId: selectedFeedId,
     groupId: selectedGroupId,
   });
-  const listArticles = isStarredMode ? starredArticles : articles;
+  const sourceArticles = isStarredMode ? starredArticles : articles;
+  const listArticles = useMemo(() => {
+    if (articleFilter !== "unread") return sourceArticles;
+
+    return sourceArticles.filter(
+      (item) => item.unread || item.id === selectedArticleId,
+    );
+  }, [articleFilter, selectedArticleId, sourceArticles]);
 
   const markRead = useMarkItemsRead();
   const markUnread = useMarkItemsUnread();
+  const autoReadItemIdsRef = useRef(new Set<number>());
   const { isItemStarred, getBookmarkByItemId } = useBookmarkLookup();
   const createBookmark = useCreateBookmark();
   const deleteBookmark = useDeleteBookmark();
@@ -141,6 +149,17 @@ export function useSelectedArticleDetail() {
     if (!article || article.feed_id <= 0) return;
     setSelectedFeed(article.feed_id);
   };
+
+  useEffect(() => {
+    if (!article || !canToggleRead || !article.unread) return;
+    if (autoReadItemIdsRef.current.has(article.id)) return;
+
+    autoReadItemIdsRef.current.add(article.id);
+    void markRead.mutateAsync([article.id]).catch((error) => {
+      autoReadItemIdsRef.current.delete(article.id);
+      console.error("Failed to mark article as read:", error);
+    });
+  }, [article, canToggleRead, markRead]);
 
   const { goToNext, goToPrevious, hasNext, hasPrevious } =
     useArticleNavigation(articleIds, {

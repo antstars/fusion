@@ -78,7 +78,14 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     groupId: selectedGroupId,
   });
 
-  const articles = isStarredMode ? starredArticles : items;
+  const sourceArticles = isStarredMode ? starredArticles : items;
+  const articles = useMemo(() => {
+    if (articleFilter !== "unread") return sourceArticles;
+
+    return sourceArticles.filter(
+      (article) => article.unread || article.id === selectedArticleId,
+    );
+  }, [articleFilter, selectedArticleId, sourceArticles]);
   const getArticleUnread = useCallback(
     (article: Item) => {
       if (!isStarredMode) return article.unread;

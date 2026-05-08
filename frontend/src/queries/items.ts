@@ -105,6 +105,7 @@ function applyOptimisticItemReadState(
   const idSet = new Set(ids);
   const feedDeltaMap = new Map<number, number>();
   const updatedItemsById = new Map<number, Item>();
+  const changedIds = new Set<number>();
 
   qc.setQueriesData<ItemsInfiniteData>(
     { queryKey: queryKeys.items.lists() },
@@ -120,11 +121,14 @@ function applyOptimisticItemReadState(
               return item;
             }
 
-            const delta = targetUnread ? 1 : -1;
-            feedDeltaMap.set(
-              item.feed_id,
-              (feedDeltaMap.get(item.feed_id) ?? 0) + delta,
-            );
+            if (!changedIds.has(item.id)) {
+              const delta = targetUnread ? 1 : -1;
+              feedDeltaMap.set(
+                item.feed_id,
+                (feedDeltaMap.get(item.feed_id) ?? 0) + delta,
+              );
+              changedIds.add(item.id);
+            }
 
             const updatedItem = { ...item, unread: targetUnread };
             updatedItemsById.set(item.id, updatedItem);
