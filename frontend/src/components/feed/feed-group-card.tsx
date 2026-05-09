@@ -1,4 +1,14 @@
-import { AlertCircle, ChevronDown, ChevronRight, Folder, Pause, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { FeedFavicon } from "@/components/feed/feed-favicon";
 import { Input } from "@/components/ui/input";
@@ -29,6 +39,8 @@ interface FeedGroupCardProps {
   onOpenAddFeed: () => void;
   onOpenDeleteGroup: (group: Group) => void;
   onOpenEditFeed: (feed: Feed) => void;
+  onToggleFeedSuspended: (feed: Feed) => void;
+  togglingFeedId: number | null;
   onChangeMobileErrorTooltipFeedId: Dispatch<SetStateAction<number | null>>;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
@@ -57,6 +69,8 @@ export function FeedGroupCard({
   onOpenAddFeed,
   onOpenDeleteGroup,
   onOpenEditFeed,
+  onToggleFeedSuspended,
+  togglingFeedId,
   onChangeMobileErrorTooltipFeedId,
   t,
 }: FeedGroupCardProps) {
@@ -245,9 +259,6 @@ export function FeedGroupCard({
                     </TooltipContent>
                   </Tooltip>
                 )}
-                {feed.suspended && (
-                  <Pause className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                )}
                 <span className="hidden text-xs text-muted-foreground sm:inline">
                   {t("feeds.itemCount", {
                     count: feed.item_count,
@@ -257,6 +268,23 @@ export function FeedGroupCard({
                     ? formatDate(feed.fetch_state.last_checked_at)
                     : t("common.unknown")}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => onToggleFeedSuspended(feed)}
+                  disabled={togglingFeedId === feed.id}
+                  className="rounded p-1 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                  aria-label={
+                    feed.suspended
+                      ? t("feed.action.resume")
+                      : t("feed.action.pause")
+                  }
+                >
+                  {feed.suspended ? (
+                    <Play className="h-3.5 w-3.5 text-muted-foreground" />
+                  ) : (
+                    <Pause className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                </button>
                 <button
                   type="button"
                   onClick={() => onOpenEditFeed(feed)}

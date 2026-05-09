@@ -41,6 +41,7 @@ import {
   useFeedLookup,
   useMoveFeedsToGroup,
   useRefreshFeeds,
+  useUpdateFeed,
 } from "@/queries/feeds";
 import { useDeleteGroup, useGroups, useUpdateGroup } from "@/queries/groups";
 import { useUIStore } from "@/store";
@@ -61,6 +62,7 @@ function FeedsPage() {
   const deleteGroupMutation = useDeleteGroup();
   const moveFeedsMutation = useMoveFeedsToGroup();
   const refreshFeedsMutation = useRefreshFeeds();
+  const updateFeedMutation = useUpdateFeed();
 
   const {
     setEditFeedOpen,
@@ -83,6 +85,7 @@ function FeedsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
+  const [togglingFeedId, setTogglingFeedId] = useState<number | null>(null);
   const [mobileErrorTooltipFeedId, setMobileErrorTooltipFeedId] = useState<
     number | null
   >(null);
@@ -137,6 +140,24 @@ function FeedsPage() {
       toast.success(t("feeds.toast.refreshing"));
     } catch {
       toast.error(t("feeds.toast.refreshFailed"));
+    }
+  };
+
+  const handleToggleFeedSuspended = async (feed: Feed) => {
+    const suspended = !feed.suspended;
+    setTogglingFeedId(feed.id);
+
+    try {
+      await updateFeedMutation.mutateAsync({ id: feed.id, suspended });
+      toast.success(
+        suspended ? t("feed.toast.paused") : t("feed.toast.resumed"),
+      );
+    } catch {
+      toast.error(
+        suspended ? t("feed.toast.pauseFailed") : t("feed.toast.resumeFailed"),
+      );
+    } finally {
+      setTogglingFeedId(null);
     }
   };
 
@@ -364,6 +385,10 @@ function FeedsPage() {
                       onOpenAddFeed={() => setAddFeedOpen(true)}
                       onOpenDeleteGroup={setDeletingGroup}
                       onOpenEditFeed={(feed) => setEditFeedOpen(true, feed)}
+                      onToggleFeedSuspended={(feed) => {
+                        void handleToggleFeedSuspended(feed);
+                      }}
+                      togglingFeedId={togglingFeedId}
                       onChangeMobileErrorTooltipFeedId={setMobileErrorTooltipFeedId}
                       t={t}
                     />

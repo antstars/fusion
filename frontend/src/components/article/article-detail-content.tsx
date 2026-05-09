@@ -197,6 +197,7 @@ export function ArticleDetailContent({
   showCloseButton = false,
 }: ArticleDetailContentProps) {
   const { t } = useI18n();
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const {
     article,
     bookmark,
@@ -215,6 +216,10 @@ export function ArticleDetailContent({
     setSelectedArticle,
     starred,
   } = useSelectedArticleDetail();
+
+  useEffect(() => {
+    scrollViewportRef.current?.scrollTo({ top: 0 });
+  }, [article?.id, selectedArticleId]);
 
   if (!article) {
     if (selectedArticleId !== null) {
@@ -293,7 +298,7 @@ export function ArticleDetailContent({
         )}
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1" viewportRef={scrollViewportRef}>
         <article className="mx-auto min-w-0 max-w-4xl px-5 py-6 sm:px-12 sm:py-8">
           <div className="space-y-3">
             <h1 className="text-[28px] leading-[1.3] font-bold">
