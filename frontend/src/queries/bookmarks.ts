@@ -155,6 +155,11 @@ export function useDeleteBookmark() {
         return;
       }
 
+      qc.setQueryData(
+        queryKeys.bookmarks.list(),
+        (old: Bookmark[] | undefined) =>
+          old?.filter((b) => b.id !== bookmarkId),
+      );
       setStarredOverride(resolveBookmarkItemId(bookmark), false);
     },
   });
