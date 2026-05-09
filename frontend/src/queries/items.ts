@@ -24,6 +24,9 @@ type ItemsMutationContext = {
   prevItemDetails: Array<readonly [number, Item | undefined]>;
   prevFeeds: Feed[] | undefined;
 };
+interface SetItemsReadStateOptions {
+  keepReadItemsInUnreadLists?: boolean;
+}
 
 function buildListItemsParams(
   filters: NormalizedItemFilters,
@@ -101,6 +104,7 @@ function applyOptimisticItemReadState(
   ids: number[],
   targetUnread: boolean,
   prevFeeds: Feed[] | undefined,
+  options: SetItemsReadStateOptions = {},
 ) {
   const idSet = new Set(ids);
   const feedDeltaMap = new Map<number, number>();
@@ -113,7 +117,10 @@ function applyOptimisticItemReadState(
 
   for (const [queryKey] of listEntries) {
     const filters = queryKey[2] as NormalizedItemFilters | undefined;
-    const removeReadItems = filters?.unread === true && !targetUnread;
+    const removeReadItems =
+      filters?.unread === true &&
+      !targetUnread &&
+      !options.keepReadItemsInUnreadLists;
 
     qc.setQueryData<ItemsInfiniteData>(queryKey, (old) => {
       if (!old) return old;
@@ -219,7 +226,10 @@ function rollbackItemsMutation(
   }
 }
 
-function useSetItemsReadState(targetUnread: boolean) {
+function useSetItemsReadState(
+  targetUnread: boolean,
+  options: SetItemsReadStateOptions = {},
+) {
   const qc = useQueryClient();
 
   return useMutation({
@@ -239,7 +249,13 @@ function useSetItemsReadState(targetUnread: boolean) {
       ]);
 
       const context = snapshotItemsMutationState(qc, ids);
-      applyOptimisticItemReadState(qc, ids, targetUnread, context.prevFeeds);
+      applyOptimisticItemReadState(
+        qc,
+        ids,
+        targetUnread,
+        context.prevFeeds,
+        options,
+      );
       return context;
     },
     onError: (_error, _ids, context) => {
@@ -251,8 +267,8 @@ function useSetItemsReadState(targetUnread: boolean) {
   });
 }
 
-export function useMarkItemsRead() {
-  return useSetItemsReadState(false);
+export function useMarkItemsRead(options?: SetItemsReadStateOptions) {
+  return useSetItemsReadState(false, options);
 }
 
 export function useMarkItemsUnread() {

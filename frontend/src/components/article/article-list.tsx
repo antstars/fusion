@@ -109,10 +109,15 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
   const displayArticles = useMemo(
     () =>
-      articles.map((article) => ({
-        ...article,
-        unread: getArticleUnread(article),
-      })),
+      articles.map((article) => {
+        const unread = getArticleUnread(article);
+        if (article.unread === unread) return article;
+
+        return {
+          ...article,
+          unread,
+        };
+      }),
     [articles, getArticleUnread],
   );
 
@@ -296,7 +301,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
       {/* Article area with filter tabs */}
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6",
+          "flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-4 sm:px-6",
           compact && "px-3 sm:px-3",
         )}
       >
@@ -306,7 +311,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
             value={articleFilter}
             onValueChange={(v) => setArticleFilter(v as ArticleFilter)}
           >
-            <TabsList className="glass-control border">
+            <TabsList className="border bg-muted/70">
               <TabsTrigger value="all">{t("article.filter.all")}</TabsTrigger>
               <TabsTrigger value="unread">{t("article.filter.unread")}</TabsTrigger>
               <TabsTrigger value="starred">
@@ -318,13 +323,13 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
         {/* Article list */}
         <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-2 pr-1">
+          <div className="space-y-1 pr-1">
             {isLoading && articles.length === 0 ? (
               <div className="space-y-2 p-2">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="h-24 animate-pulse rounded-md bg-background/55"
+                    className="h-24 animate-pulse rounded-md bg-muted/60"
                   />
                 ))}
               </div>
@@ -360,7 +365,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
                       key={article.id}
                       article={article}
                       compact={compact}
-                      selectedArticleId={selectedArticleId}
+                      isSelected={selectedArticleId === article.id}
                       onSelectArticle={setSelectedArticle}
                       onToggleRead={handleToggleRead}
                       onToggleStar={handleToggleStar}

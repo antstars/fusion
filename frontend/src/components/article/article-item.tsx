@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Circle, CircleCheck, Star, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -8,7 +9,7 @@ import { toSafeExternalUrl } from "@/lib/safe-url";
 
 interface ArticleItemProps {
   article: Item;
-  selectedArticleId: number | null;
+  isSelected: boolean;
   onSelectArticle: (articleId: number | null) => void;
   onToggleRead: (article: Item) => Promise<void>;
   onToggleStar: (article: Item) => Promise<void>;
@@ -19,9 +20,9 @@ interface ArticleItemProps {
   compact?: boolean;
 }
 
-export function ArticleItem({
+function ArticleItemComponent({
   article,
-  selectedArticleId,
+  isSelected,
   onSelectArticle,
   onToggleRead,
   onToggleStar,
@@ -33,7 +34,6 @@ export function ArticleItem({
 }: ArticleItemProps) {
   const { t } = useI18n();
 
-  const isSelected = selectedArticleId === article.id;
   const safeArticleLink = toSafeExternalUrl(article.link);
 
   const handleToggleRead = async (e: React.MouseEvent) => {
@@ -68,36 +68,38 @@ export function ArticleItem({
         }
       }}
       className={cn(
-        "group relative flex w-full cursor-pointer items-start gap-4 rounded-md border border-transparent px-4 py-4 text-left transition-all hover:border-border/70 hover:bg-background/60 hover:shadow-xs",
+        "article-row group relative flex w-full cursor-pointer items-start gap-4 rounded-md border px-4 py-4 text-left transition-colors",
         compact && "px-3 py-3",
-        isSelected && "border-border/80 bg-background/75 shadow-sm",
       )}
+      data-selected={isSelected}
     >
       {/* Article Content */}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <h3
           className={cn(
-            "line-clamp-2 text-[15px] leading-snug font-medium",
-            article.unread ? "text-foreground" : "text-muted-foreground",
+            "line-clamp-2 text-[15px] leading-snug",
+            article.unread
+              ? "font-semibold text-foreground"
+              : "font-medium text-muted-foreground",
           )}
         >
           {article.title}
         </h3>
         <p
           className={cn(
-            "line-clamp-2 text-sm text-muted-foreground",
+            "line-clamp-2 text-sm leading-relaxed text-muted-foreground",
             compact && "line-clamp-1 text-xs",
           )}
         >
           {extractSummary(article.content, 150)}
         </p>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <FeedFavicon src={feedFaviconUrl} className="h-3.5 w-3.5 rounded-sm" />
-          <span className="truncate font-medium text-muted-foreground">
+          <span className="truncate font-medium">
             {feedName}
           </span>
-          <span className="text-muted-foreground">·</span>
-          <span className="shrink-0 text-muted-foreground">
+          <span>-</span>
+          <span className="shrink-0">
             {formatDate(article.pub_date)}
           </span>
         </div>
@@ -111,8 +113,8 @@ export function ArticleItem({
           onClick={handleToggleRead}
           disabled={!canToggleRead}
           className={cn(
-            "glass-control border",
-            article.unread ? "bg-muted" : "bg-primary/10",
+            "border bg-background shadow-xs",
+            article.unread ? "border-border" : "border-primary/20 bg-primary/10",
           )}
           aria-label={
             article.unread
@@ -136,7 +138,7 @@ export function ArticleItem({
           size="icon-sm"
           onClick={handleToggleStar}
           className={cn(
-            "glass-control border",
+            "border bg-background shadow-xs",
             isStarred ? "bg-amber-100 dark:bg-amber-950/40" : "bg-muted",
           )}
           aria-label={
@@ -157,7 +159,7 @@ export function ArticleItem({
             asChild
             variant="ghost"
             size="icon-sm"
-            className="glass-control border bg-muted"
+            className="border bg-background shadow-xs"
             aria-label={t("article.action.openInBrowser")}
             title={t("article.action.openInBrowser")}
           >
@@ -175,7 +177,7 @@ export function ArticleItem({
             variant="ghost"
             size="icon-sm"
             disabled
-            className="glass-control border bg-muted"
+            className="border bg-background shadow-xs"
             aria-label={t("article.action.openInBrowser")}
             title={t("article.action.openInBrowser")}
           >
@@ -186,3 +188,5 @@ export function ArticleItem({
     </div>
   );
 }
+
+export const ArticleItem = memo(ArticleItemComponent);

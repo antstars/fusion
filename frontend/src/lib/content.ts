@@ -98,6 +98,8 @@ function sanitizeImages(root: DocumentFragment, articleUrl: string | null): void
     }
 
     img.setAttribute("src", safeSrc);
+    img.setAttribute("loading", "lazy");
+    img.setAttribute("decoding", "async");
     if (isTrackingPixel(img)) {
       img.remove();
     }

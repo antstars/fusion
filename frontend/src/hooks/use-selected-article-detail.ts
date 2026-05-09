@@ -54,7 +54,7 @@ export function useSelectedArticleDetail() {
     );
   }, [articleFilter, selectedArticleId, sourceArticles]);
 
-  const markRead = useMarkItemsRead();
+  const markRead = useMarkItemsRead({ keepReadItemsInUnreadLists: true });
   const markUnread = useMarkItemsUnread();
   const autoReadItemIdsRef = useRef(new Set<number>());
   const { isItemStarred, getBookmarkByItemId } = useBookmarkLookup();

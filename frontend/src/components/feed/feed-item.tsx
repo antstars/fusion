@@ -27,11 +27,9 @@ export function FeedItem({ feed }: FeedItemProps) {
   return (
     <div
       className={cn(
-        "group flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-sm transition-colors",
-        isSelected
-          ? "bg-background/70 text-accent-foreground shadow-xs"
-          : "hover:bg-background/55",
+        "sidebar-row group flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm transition-colors",
       )}
+      data-selected={isSelected}
     >
       <button
         type="button"
@@ -44,7 +42,7 @@ export function FeedItem({ feed }: FeedItemProps) {
         </span>
       </button>
       <div className="ml-2 flex h-6 shrink-0 items-center justify-center">
-        <span className="text-[11px] text-muted-foreground md:group-hover:hidden md:group-focus-within:hidden">
+        <span className="sidebar-count md:group-hover:hidden md:group-focus-within:hidden">
           {feed.unread_count > 0 ? feed.unread_count : ""}
         </span>
         <Button

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Circle,
   CircleCheck,
@@ -56,6 +56,12 @@ export function ArticleDetailContent({
   useEffect(() => {
     scrollViewportRef.current?.scrollTo({ top: 0 });
   }, [article?.id, selectedArticleId]);
+
+  const articleHtml = useMemo(() => {
+    if (!article) return "";
+
+    return processArticleContent(article.content, safeArticleLink ?? undefined);
+  }, [article?.content, safeArticleLink]);
 
   if (!article) {
     if (selectedArticleId !== null) {
@@ -136,7 +142,10 @@ export function ArticleDetailContent({
         </div>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1" viewportRef={scrollViewportRef}>
+      <ScrollArea
+        className="mobile-smooth-scroll min-h-0 flex-1"
+        viewportRef={scrollViewportRef}
+      >
         <article className="mx-auto min-w-0 max-w-4xl px-5 py-8 sm:px-8 sm:py-10">
           <div className="space-y-3">
             <h1 className="text-[28px] leading-[1.3] font-bold">
@@ -185,10 +194,7 @@ export function ArticleDetailContent({
           <div
             className="prose prose-neutral mt-6 min-w-0 max-w-none break-words dark:prose-invert"
             dangerouslySetInnerHTML={{
-              __html: processArticleContent(
-                article.content,
-                safeArticleLink ?? undefined,
-              ),
+              __html: articleHtml,
             }}
           />
         </article>

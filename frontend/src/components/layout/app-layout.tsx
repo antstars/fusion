@@ -44,7 +44,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <Sheet open={isSidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="glass-panel-strong w-[260px] p-0"
+            className="w-[260px] transform-gpu bg-background p-0 duration-200"
             showCloseButton={false}
           >
             <SheetTitle className="sr-only">{t("common.navigation")}</SheetTitle>

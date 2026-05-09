@@ -81,24 +81,20 @@ export function FeedList() {
               key={value}
               onClick={() => selectTopLevelFilter(value)}
               className={cn(
-                "flex w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors",
-                isTopLevelSelected && articleFilter === value
-                  ? "bg-background/70 text-accent-foreground shadow-xs"
-                  : "hover:bg-background/55",
+                "sidebar-row flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm transition-colors",
               )}
+              data-selected={isTopLevelSelected && articleFilter === value}
             >
               <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1">{label}</span>
-              <span className="shrink-0 text-[11px] text-muted-foreground">
-                {count}
-              </span>
+              <span className="sidebar-count shrink-0">{count}</span>
             </button>
           ))}
         </div>
 
         {/* Feeds header */}
-        <div className="mt-2 flex items-center justify-between px-2 py-1">
-          <span className="text-[11px] font-medium text-muted-foreground">
+        <div className="mt-3 flex items-center justify-between px-2 py-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t("search.group.feeds")}
           </span>
         </div>
