@@ -7,6 +7,7 @@ import {
   Pencil,
   Play,
   Plus,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
@@ -39,7 +40,9 @@ interface FeedGroupCardProps {
   onOpenAddFeed: () => void;
   onOpenDeleteGroup: (group: Group) => void;
   onOpenEditFeed: (feed: Feed) => void;
+  onRefreshFeed: (feed: Feed) => void;
   onToggleFeedSuspended: (feed: Feed) => void;
+  refreshingFeedId: number | null;
   togglingFeedId: number | null;
   onChangeMobileErrorTooltipFeedId: Dispatch<SetStateAction<number | null>>;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
@@ -69,7 +72,9 @@ export function FeedGroupCard({
   onOpenAddFeed,
   onOpenDeleteGroup,
   onOpenEditFeed,
+  onRefreshFeed,
   onToggleFeedSuspended,
+  refreshingFeedId,
   togglingFeedId,
   onChangeMobileErrorTooltipFeedId,
   t,
@@ -268,6 +273,20 @@ export function FeedGroupCard({
                     ? formatDate(feed.fetch_state.last_checked_at)
                     : t("common.unknown")}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => onRefreshFeed(feed)}
+                  disabled={refreshingFeedId === feed.id}
+                  className="rounded p-1 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                  aria-label={t("feed.action.refresh")}
+                >
+                  <RefreshCw
+                    className={cn(
+                      "h-3.5 w-3.5 text-muted-foreground",
+                      refreshingFeedId === feed.id && "animate-spin",
+                    )}
+                  />
+                </button>
                 <button
                   type="button"
                   onClick={() => onToggleFeedSuspended(feed)}

@@ -101,6 +101,7 @@ export const frMessages: PartialMessages = {
   "feed.add.urlPlaceholder": "https://example.com/feed.xml",
   "feed.add.validateTitle": "Verifier l'URL du flux",
   "feed.action.pause": "Suspendre le flux",
+  "feed.action.refresh": "Actualiser le flux",
   "feed.action.resume": "Reprendre le flux",
   "feed.edit.deleteConfirm.description":
     'Voulez-vous vraiment vous desabonner de "{name}" ? Tous les articles de ce flux seront supprimes.',
@@ -122,6 +123,8 @@ export const frMessages: PartialMessages = {
   "feed.toast.noFeedsForUrl": "Aucun flux trouve pour cette URL",
   "feed.toast.pauseFailed": "Echec de suspension du flux",
   "feed.toast.paused": "Flux suspendu",
+  "feed.toast.refreshFailed": "Echec d'actualisation du flux",
+  "feed.toast.refreshing": "Actualisation du flux...",
   "feed.toast.resumeFailed": "Echec de reprise du flux",
   "feed.toast.resumed": "Flux repris",
   "feed.toast.unsubscribeFailed": "Echec du desabonnement",

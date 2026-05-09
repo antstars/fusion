@@ -73,6 +73,8 @@ export const feedAPI = {
 
   refresh: () => api.post<void>("/feeds/refresh"),
 
+  refreshOne: (id: number) => api.post<void>(`/feeds/${id}/refresh`),
+
   batchCreate: (data: BatchCreateFeedsRequest) =>
     api.post<APIResponse<BatchCreateFeedsResponse>>("/feeds/batch", data),
 };

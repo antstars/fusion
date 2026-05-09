@@ -101,6 +101,7 @@ export const svMessages: PartialMessages = {
   "feed.add.urlPlaceholder": "https://example.com/feed.xml",
   "feed.add.validateTitle": "Verifiera flodes-URL",
   "feed.action.pause": "Pausa flode",
+  "feed.action.refresh": "Uppdatera flode",
   "feed.action.resume": "Ateruppta flode",
   "feed.edit.deleteConfirm.description":
     'Ar du saker pa att du vill avsluta prenumerationen pa "{name}"? Alla artiklar fran detta flode kommer att raderas.',
@@ -122,6 +123,8 @@ export const svMessages: PartialMessages = {
   "feed.toast.noFeedsForUrl": "Inga floden hittades for denna URL",
   "feed.toast.pauseFailed": "Kunde inte pausa flode",
   "feed.toast.paused": "Flode pausat",
+  "feed.toast.refreshFailed": "Kunde inte uppdatera flode",
+  "feed.toast.refreshing": "Uppdaterar flode...",
   "feed.toast.resumeFailed": "Kunde inte ateruppta flode",
   "feed.toast.resumed": "Flode aterupptaget",
   "feed.toast.unsubscribeFailed": "Kunde inte avsluta prenumerationen",

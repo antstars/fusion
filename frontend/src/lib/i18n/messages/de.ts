@@ -101,6 +101,7 @@ export const deMessages: PartialMessages = {
   "feed.add.urlPlaceholder": "https://example.com/feed.xml",
   "feed.add.validateTitle": "Feed-URL prufen",
   "feed.action.pause": "Feed pausieren",
+  "feed.action.refresh": "Feed aktualisieren",
   "feed.action.resume": "Feed fortsetzen",
   "feed.edit.deleteConfirm.description":
     'Mochten Sie "{name}" wirklich abbestellen? Alle Artikel dieses Feeds werden geloscht.',
@@ -122,6 +123,8 @@ export const deMessages: PartialMessages = {
   "feed.toast.noFeedsForUrl": "Keine Feeds fur diese URL gefunden",
   "feed.toast.pauseFailed": "Feed konnte nicht pausiert werden",
   "feed.toast.paused": "Feed pausiert",
+  "feed.toast.refreshFailed": "Feed konnte nicht aktualisiert werden",
+  "feed.toast.refreshing": "Feed wird aktualisiert...",
   "feed.toast.resumeFailed": "Feed konnte nicht fortgesetzt werden",
   "feed.toast.resumed": "Feed fortgesetzt",
   "feed.toast.unsubscribeFailed": "Feed konnte nicht abbestellt werden",

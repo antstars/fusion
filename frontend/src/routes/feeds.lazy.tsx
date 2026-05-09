@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import {
   useFeedLookup,
   useMoveFeedsToGroup,
+  useRefreshFeed,
   useRefreshFeeds,
   useUpdateFeed,
 } from "@/queries/feeds";
@@ -62,6 +63,7 @@ function FeedsPage() {
   const deleteGroupMutation = useDeleteGroup();
   const moveFeedsMutation = useMoveFeedsToGroup();
   const refreshFeedsMutation = useRefreshFeeds();
+  const refreshFeedMutation = useRefreshFeed();
   const updateFeedMutation = useUpdateFeed();
 
   const {
@@ -85,6 +87,7 @@ function FeedsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
+  const [refreshingFeedId, setRefreshingFeedId] = useState<number | null>(null);
   const [togglingFeedId, setTogglingFeedId] = useState<number | null>(null);
   const [mobileErrorTooltipFeedId, setMobileErrorTooltipFeedId] = useState<
     number | null
@@ -140,6 +143,19 @@ function FeedsPage() {
       toast.success(t("feeds.toast.refreshing"));
     } catch {
       toast.error(t("feeds.toast.refreshFailed"));
+    }
+  };
+
+  const handleRefreshFeed = async (feed: Feed) => {
+    setRefreshingFeedId(feed.id);
+
+    try {
+      await refreshFeedMutation.mutateAsync(feed.id);
+      toast.success(t("feed.toast.refreshing"));
+    } catch {
+      toast.error(t("feed.toast.refreshFailed"));
+    } finally {
+      setRefreshingFeedId(null);
     }
   };
 
@@ -385,9 +401,13 @@ function FeedsPage() {
                       onOpenAddFeed={() => setAddFeedOpen(true)}
                       onOpenDeleteGroup={setDeletingGroup}
                       onOpenEditFeed={(feed) => setEditFeedOpen(true, feed)}
+                      onRefreshFeed={(feed) => {
+                        void handleRefreshFeed(feed);
+                      }}
                       onToggleFeedSuspended={(feed) => {
                         void handleToggleFeedSuspended(feed);
                       }}
+                      refreshingFeedId={refreshingFeedId}
                       togglingFeedId={togglingFeedId}
                       onChangeMobileErrorTooltipFeedId={setMobileErrorTooltipFeedId}
                       t={t}

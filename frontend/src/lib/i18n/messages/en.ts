@@ -99,6 +99,7 @@ export const enMessages = {
   "feed.add.urlPlaceholder": "https://example.com/feed.xml",
   "feed.add.validateTitle": "Validate feed URL",
   "feed.action.pause": "Pause feed",
+  "feed.action.refresh": "Refresh feed",
   "feed.action.resume": "Resume feed",
   "feed.edit.deleteConfirm.description":
     'Are you sure you want to unsubscribe from "{name}"? All items from this feed will be deleted.',
@@ -120,6 +121,8 @@ export const enMessages = {
   "feed.toast.noFeedsForUrl": "No feeds found for this URL",
   "feed.toast.pauseFailed": "Failed to pause feed",
   "feed.toast.paused": "Feed paused",
+  "feed.toast.refreshFailed": "Failed to refresh feed",
+  "feed.toast.refreshing": "Refreshing feed...",
   "feed.toast.resumeFailed": "Failed to resume feed",
   "feed.toast.resumed": "Feed resumed",
   "feed.toast.unsubscribeFailed": "Failed to unsubscribe from feed",

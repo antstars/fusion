@@ -101,6 +101,7 @@ export const ruMessages: PartialMessages = {
   "feed.add.urlPlaceholder": "https://example.com/feed.xml",
   "feed.add.validateTitle": "Проверить URL ленты",
   "feed.action.pause": "Приостановить ленту",
+  "feed.action.refresh": "Обновить ленту",
   "feed.action.resume": "Возобновить ленту",
   "feed.edit.deleteConfirm.description":
     "Вы уверены, что хотите отписаться от \"{name}\"? Все статьи этой ленты будут удалены.",
@@ -122,6 +123,8 @@ export const ruMessages: PartialMessages = {
   "feed.toast.noFeedsForUrl": "Для этого URL ленты не найдены",
   "feed.toast.pauseFailed": "Не удалось приостановить ленту",
   "feed.toast.paused": "Лента приостановлена",
+  "feed.toast.refreshFailed": "Не удалось обновить ленту",
+  "feed.toast.refreshing": "Обновление ленты...",
   "feed.toast.resumeFailed": "Не удалось возобновить ленту",
   "feed.toast.resumed": "Лента возобновлена",
   "feed.toast.unsubscribeFailed": "Не удалось отписаться от ленты",

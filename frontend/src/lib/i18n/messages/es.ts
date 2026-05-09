@@ -101,6 +101,7 @@ export const esMessages: PartialMessages = {
   "feed.add.urlPlaceholder": "https://example.com/feed.xml",
   "feed.add.validateTitle": "Validar URL del feed",
   "feed.action.pause": "Pausar feed",
+  "feed.action.refresh": "Actualizar feed",
   "feed.action.resume": "Reanudar feed",
   "feed.edit.deleteConfirm.description":
     'Seguro que quieres cancelar la suscripcion de "{name}"? Todos los articulos de este feed se eliminaran.',
@@ -122,6 +123,8 @@ export const esMessages: PartialMessages = {
   "feed.toast.noFeedsForUrl": "No se encontraron feeds para esta URL",
   "feed.toast.pauseFailed": "No se pudo pausar el feed",
   "feed.toast.paused": "Feed pausado",
+  "feed.toast.refreshFailed": "No se pudo actualizar el feed",
+  "feed.toast.refreshing": "Actualizando feed...",
   "feed.toast.resumeFailed": "No se pudo reanudar el feed",
   "feed.toast.resumed": "Feed reanudado",
   "feed.toast.unsubscribeFailed": "No se pudo cancelar la suscripcion del feed",

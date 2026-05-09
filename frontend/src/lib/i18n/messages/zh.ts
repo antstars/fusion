@@ -101,6 +101,7 @@ export const zhMessages: PartialMessages = {
   "feed.add.urlPlaceholder": "https://example.com/feed.xml",
   "feed.add.validateTitle": "验证订阅地址",
   "feed.action.pause": "暂停订阅",
+  "feed.action.refresh": "刷新订阅",
   "feed.action.resume": "开始订阅",
   "feed.edit.deleteConfirm.description":
     "确定要取消订阅“{name}”吗？该订阅的所有文章将被删除。",
@@ -122,6 +123,8 @@ export const zhMessages: PartialMessages = {
   "feed.toast.noFeedsForUrl": "该地址未发现订阅",
   "feed.toast.pauseFailed": "暂停订阅失败",
   "feed.toast.paused": "订阅已暂停",
+  "feed.toast.refreshFailed": "刷新订阅失败",
+  "feed.toast.refreshing": "正在刷新订阅...",
   "feed.toast.resumeFailed": "开始订阅失败",
   "feed.toast.resumed": "订阅已开始",
   "feed.toast.unsubscribeFailed": "取消订阅失败",
