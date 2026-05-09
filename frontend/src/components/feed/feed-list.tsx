@@ -15,7 +15,7 @@ export function FeedList() {
   const { t } = useI18n();
   const { data: groups = [], isLoading } = useGroups();
   const { feeds, getFeedsByGroup } = useFeedLookup();
-  const { getTotalUnreadCount } = useUnreadCounts();
+  const { getTotalUnreadCount, getTotalItemCount } = useUnreadCounts();
   const { bookmarks } = useBookmarkLookup();
   const {
     selectedFeedId,
@@ -30,6 +30,7 @@ export function FeedList() {
   const isTopLevelSelected =
     isOnHomePage && selectedFeedId === null && selectedGroupId === null;
   const totalUnread = getTotalUnreadCount();
+  const totalItems = getTotalItemCount();
   const starredCount = bookmarks.length;
 
   const topFilters: Array<{
@@ -53,7 +54,7 @@ export function FeedList() {
     {
       value: "all",
       label: t("article.filter.all"),
-      count: totalUnread,
+      count: totalItems,
       icon: Layers,
     },
   ];
