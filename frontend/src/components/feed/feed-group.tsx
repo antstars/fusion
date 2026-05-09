@@ -32,8 +32,8 @@ export function FeedGroup({ groupId, name, feeds }: FeedGroupProps) {
         className={cn(
           "flex w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors",
           isSelected
-            ? "bg-accent text-accent-foreground"
-            : "hover:bg-accent/50",
+            ? "bg-background/70 text-accent-foreground shadow-xs"
+            : "hover:bg-background/55",
         )}
       >
         <button

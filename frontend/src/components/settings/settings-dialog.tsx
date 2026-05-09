@@ -244,9 +244,9 @@ export function SettingsDialog() {
 
   return (
     <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:flex-row h-auto sm:h-[560px] sm:max-w-4xl gap-0 overflow-hidden p-0">
+      <DialogContent className="glass-panel-strong flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:h-[560px] sm:max-w-4xl sm:flex-row">
         {/* Sidebar (desktop) / Tab bar (mobile) */}
-        <div className="flex shrink-0 flex-row border-b border-border bg-muted/30 px-3 pt-3 sm:w-[200px] sm:flex-col sm:border-b-0 sm:border-r sm:pt-4">
+        <div className="flex shrink-0 flex-row border-b border-border/70 bg-background/35 px-3 pt-3 sm:w-[200px] sm:flex-col sm:border-b-0 sm:border-r sm:pt-4">
           <h2 className="hidden px-2 text-sm font-semibold sm:block">
             {t("common.settings")}
           </h2>

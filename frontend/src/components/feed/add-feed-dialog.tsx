@@ -140,7 +140,7 @@ export function AddFeedDialog() {
     <>
       <Dialog open={isAddFeedOpen} onOpenChange={setAddFeedOpen}>
         <DialogContent
-          className="flex w-full max-w-[480px] flex-col gap-0 overflow-hidden p-0"
+          className="glass-panel-strong flex w-full max-w-[480px] flex-col gap-0 overflow-hidden p-0"
           showCloseButton={false}
         >
           {/* Header */}
@@ -291,7 +291,7 @@ export function AddFeedDialog() {
         }}
       >
         <DialogContent
-          className="w-full max-w-[560px] p-0"
+          className="glass-panel-strong w-full max-w-[560px] p-0"
           showCloseButton={false}
         >
           <DialogHeader className="flex flex-row items-center justify-between border-b px-5 py-4">
@@ -322,7 +322,7 @@ export function AddFeedDialog() {
                 key={`${feed.link}-${index}`}
                 type="button"
                 onClick={() => handleSelectDetectedFeed(feed)}
-                className="w-full rounded-md border p-3 text-left transition-colors hover:bg-accent/50"
+                className="glass-control w-full rounded-md border p-3 text-left transition-colors hover:bg-accent/50"
               >
                 <p className="truncate text-sm font-medium">
                   {feed.title || t("feed.select.fallback", { index: index + 1 })}

@@ -15,7 +15,7 @@ export function ArticleDrawer() {
     <Sheet open={selectedArticleId !== null} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
-        className="w-full p-0 sm:max-w-[max(720px,50vw)]"
+        className="glass-panel-strong w-full p-0 sm:max-w-[max(720px,50vw)]"
         showCloseButton={false}
       >
         <SheetTitle className="sr-only">Article</SheetTitle>

@@ -71,14 +71,15 @@ export function ArticleDetailContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b px-4 py-3 sm:px-6">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="glass-panel-strong shrink-0 border-b">
+        <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-3 px-5 sm:px-8">
+          <div className="flex min-w-0 items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={handleToggleRead}
             disabled={!canToggleRead}
-            className="h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
           >
             {article.unread ? (
               <Circle className="h-4 w-4 text-muted-foreground" />
@@ -93,7 +94,7 @@ export function ArticleDetailContent({
             variant="outline"
             size="sm"
             onClick={handleToggleStar}
-            className="h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
           >
             <Star
               className={`h-4 w-4 ${starred ? "fill-current text-amber-500" : ""}`}
@@ -106,7 +107,7 @@ export function ArticleDetailContent({
             size="sm"
             onClick={safeArticleLink ? undefined : handleOpenOriginal}
             disabled={!safeArticleLink}
-            className="h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
           >
             {safeArticleLink ? (
               <a href={safeArticleLink} target="_blank" rel="noopener noreferrer">
@@ -120,22 +121,23 @@ export function ArticleDetailContent({
               </>
             )}
           </Button>
-        </div>
+          </div>
 
-        {showCloseButton && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setSelectedArticle(null)}
-            aria-label={t("common.cancel")}
-          >
-            <X className="h-[18px] w-[18px] text-muted-foreground" />
-          </Button>
-        )}
+          {showCloseButton && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setSelectedArticle(null)}
+              aria-label={t("common.cancel")}
+            >
+              <X className="h-[18px] w-[18px] text-muted-foreground" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <ScrollArea className="min-h-0 flex-1" viewportRef={scrollViewportRef}>
-        <article className="mx-auto min-w-0 max-w-4xl px-5 py-6 sm:px-12 sm:py-8">
+        <article className="mx-auto min-w-0 max-w-4xl px-5 py-8 sm:px-8 sm:py-10">
           <div className="space-y-3">
             <h1 className="text-[28px] leading-[1.3] font-bold">
               {article.title}
@@ -145,7 +147,7 @@ export function ArticleDetailContent({
                 <button
                   type="button"
                   onClick={handleOpenFeed}
-                  className="flex max-w-48 items-center gap-1.5 rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
+                  className="glass-control flex max-w-48 items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
                 >
                   {feed && (
                     <FeedFavicon
@@ -158,7 +160,7 @@ export function ArticleDetailContent({
                   </span>
                 </button>
               ) : (
-                <span className="flex max-w-48 items-center gap-1.5 rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                <span className="glass-control flex max-w-48 items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium text-muted-foreground">
                   <span className="truncate">
                     {bookmark?.feed_name ?? t("common.unknown")}
                   </span>
@@ -192,27 +194,29 @@ export function ArticleDetailContent({
         </article>
       </ScrollArea>
 
-      <div className="flex items-center justify-between border-t px-4 py-3 sm:px-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goToPrevious}
-          disabled={!hasPrevious()}
-          className="h-auto gap-1.5 px-3 py-2 text-[13px] font-medium text-muted-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {t("common.previous")}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goToNext}
-          disabled={!hasNext()}
-          className="h-auto gap-1.5 px-3 py-2 text-[13px] font-medium text-muted-foreground"
-        >
-          {t("common.next")}
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+      <div className="glass-panel-strong shrink-0 border-t">
+        <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between px-5 sm:px-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToPrevious}
+            disabled={!hasPrevious()}
+            className="glass-control h-auto gap-1.5 px-3 py-2 text-[13px] font-medium text-muted-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {t("common.previous")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToNext}
+            disabled={!hasNext()}
+            className="glass-control h-auto gap-1.5 px-3 py-2 text-[13px] font-medium text-muted-foreground"
+          >
+            {t("common.next")}
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

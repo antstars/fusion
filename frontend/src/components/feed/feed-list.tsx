@@ -73,7 +73,7 @@ export function FeedList() {
 
   return (
     <ScrollArea className="min-h-0 flex-1 w-full min-w-0 overflow-hidden [&_[data-slot=scroll-area-viewport]>div]:!block">
-      <div className="w-full min-w-0 p-2 space-y-0.5">
+      <div className="w-full min-w-0 space-y-1 p-2">
         {/* Top-level filters */}
         <div className="space-y-0.5">
           {topFilters.map(({ value, label, count, icon: Icon }) => (
@@ -83,8 +83,8 @@ export function FeedList() {
               className={cn(
                 "flex w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors",
                 isTopLevelSelected && articleFilter === value
-                  ? "bg-accent text-accent-foreground"
-                  : "hover:bg-accent/50",
+                  ? "bg-background/70 text-accent-foreground shadow-xs"
+                  : "hover:bg-background/55",
               )}
             >
               <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

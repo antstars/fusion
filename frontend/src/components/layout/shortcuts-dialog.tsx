@@ -57,7 +57,7 @@ export function ShortcutsDialog() {
 
   return (
     <Dialog open={isShortcutsOpen} onOpenChange={setShortcutsOpen}>
-      <DialogContent className="sm:max-w-[560px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="glass-panel-strong max-h-[80vh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle>{t("shortcuts.title")}</DialogTitle>
         </DialogHeader>
@@ -69,7 +69,7 @@ export function ShortcutsDialog() {
                 {section.items.map((item) => (
                   <div
                     key={`${section.title}-${item.keys}`}
-                    className="flex items-center justify-between gap-4 rounded-md border px-3 py-2"
+                    className="glass-control flex items-center justify-between gap-4 rounded-md border px-3 py-2"
                   >
                     <span className="text-sm text-muted-foreground">{item.action}</span>
                     <kbd className="rounded bg-muted px-2 py-1 font-mono text-xs font-medium text-foreground">

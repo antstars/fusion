@@ -68,9 +68,9 @@ export function ArticleItem({
         }
       }}
       className={cn(
-        "group relative flex w-full cursor-pointer items-start gap-4 border-b px-4 py-4 text-left transition-colors hover:bg-accent/50",
+        "group relative flex w-full cursor-pointer items-start gap-4 rounded-md border border-transparent px-4 py-4 text-left transition-all hover:border-border/70 hover:bg-background/60 hover:shadow-xs",
         compact && "px-3 py-3",
-        isSelected && "bg-accent",
+        isSelected && "border-border/80 bg-background/75 shadow-sm",
       )}
     >
       {/* Article Content */}
@@ -110,7 +110,10 @@ export function ArticleItem({
           size="icon-sm"
           onClick={handleToggleRead}
           disabled={!canToggleRead}
-          className={cn(article.unread ? "bg-muted" : "bg-primary/10")}
+          className={cn(
+            "glass-control border",
+            article.unread ? "bg-muted" : "bg-primary/10",
+          )}
           aria-label={
             article.unread
               ? t("article.action.markRead")
@@ -132,7 +135,10 @@ export function ArticleItem({
           variant="ghost"
           size="icon-sm"
           onClick={handleToggleStar}
-          className={cn(isStarred ? "bg-amber-100 dark:bg-amber-950/40" : "bg-muted")}
+          className={cn(
+            "glass-control border",
+            isStarred ? "bg-amber-100 dark:bg-amber-950/40" : "bg-muted",
+          )}
           aria-label={
             isStarred ? t("article.action.unstar") : t("article.action.star")
           }
@@ -151,7 +157,7 @@ export function ArticleItem({
             asChild
             variant="ghost"
             size="icon-sm"
-            className="bg-muted"
+            className="glass-control border bg-muted"
             aria-label={t("article.action.openInBrowser")}
             title={t("article.action.openInBrowser")}
           >
@@ -169,7 +175,7 @@ export function ArticleItem({
             variant="ghost"
             size="icon-sm"
             disabled
-            className="bg-muted"
+            className="glass-control border bg-muted"
             aria-label={t("article.action.openInBrowser")}
             title={t("article.action.openInBrowser")}
           >

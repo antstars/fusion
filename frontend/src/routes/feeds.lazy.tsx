@@ -257,7 +257,7 @@ function FeedsPage() {
 
   return (
     <AppLayout>
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
         <ContentHeader>
           <div className="flex items-center gap-1">
             <SidebarTrigger />
@@ -271,7 +271,7 @@ function FeedsPage() {
           </div>
         </ContentHeader>
 
-        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="glass-panel mx-4 mt-4 flex flex-col gap-3 rounded-lg border px-4 py-3 sm:mx-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <div className="relative flex-1 sm:flex-initial">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -438,7 +438,7 @@ function FeedsPage() {
         open={deletingGroup !== null}
         onOpenChange={(open) => !open && setDeletingGroup(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="glass-panel-strong sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{t("feeds.deleteGroup.title")}</DialogTitle>
             <DialogDescription>
@@ -468,7 +468,7 @@ function FeedsPage() {
       </Dialog>
 
       <Dialog open={refreshConfirmOpen} onOpenChange={setRefreshConfirmOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="glass-panel-strong sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{t("feeds.refreshDialog.title")}</DialogTitle>
             <DialogDescription>

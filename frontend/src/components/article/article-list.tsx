@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCheck, Loader2 } from "lucide-react";
@@ -28,6 +28,7 @@ import { queryKeys } from "@/queries/keys";
 import { getFaviconUrl } from "@/lib/api/favicon";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { usePreferencesStore } from "@/store";
 import type { Item } from "@/lib/api";
 
 interface ArticleListProps {
@@ -49,6 +50,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   const [starredUnreadOverrides, setStarredUnreadOverrides] = useState<
     Record<number, boolean>
   >({});
+  const articlePageSize = usePreferencesStore((state) => state.articlePageSize);
 
   const isStarredMode = articleFilter === "starred";
 
@@ -117,6 +119,29 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   const hasMore = isStarredMode ? false : itemsQuery.hasNextPage;
   const isLoading = isStarredMode ? false : itemsQuery.isLoading;
   const isLoadingMore = itemsQuery.isFetchingNextPage;
+  const unreadDisplayCount = displayArticles.filter((a) => a.unread).length;
+  const fetchNextPage = itemsQuery.fetchNextPage;
+
+  useEffect(() => {
+    if (articleFilter !== "unread" || isStarredMode) return;
+    if (!itemsQuery.hasNextPage || itemsQuery.isFetchingNextPage) return;
+    if (unreadDisplayCount >= articlePageSize) return;
+    if (itemsQuery.data && unreadDisplayCount === 0) {
+      const total = itemsQuery.data.pages.at(-1)?.total ?? 0;
+      if (total === 0) return;
+    }
+
+    void fetchNextPage();
+  }, [
+    articleFilter,
+    articlePageSize,
+    fetchNextPage,
+    isStarredMode,
+    itemsQuery.data,
+    itemsQuery.hasNextPage,
+    itemsQuery.isFetchingNextPage,
+    unreadDisplayCount,
+  ]);
 
   // Setup keyboard navigation
   const articleIds = displayArticles.map((a) => a.id);
@@ -134,7 +159,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     title = group?.name ?? t("article.groupFallback");
   }
 
-  const unreadCount = displayArticles.filter((a) => a.unread).length;
+  const unreadCount = unreadDisplayCount;
   const hasNoFeeds = !isFeedsLoading && feeds.length === 0;
 
   const handleToggleRead = useCallback(
@@ -272,7 +297,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
       <div
         className={cn(
           "flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6",
-          compact && "sm:px-4",
+          compact && "px-3 sm:px-3",
         )}
       >
         {/* Filter tabs - hidden when no articles exist */}
@@ -281,7 +306,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
             value={articleFilter}
             onValueChange={(v) => setArticleFilter(v as ArticleFilter)}
           >
-            <TabsList>
+            <TabsList className="glass-control border">
               <TabsTrigger value="all">{t("article.filter.all")}</TabsTrigger>
               <TabsTrigger value="unread">{t("article.filter.unread")}</TabsTrigger>
               <TabsTrigger value="starred">
@@ -293,13 +318,13 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
         {/* Article list */}
         <ScrollArea className="min-h-0 flex-1">
-          <div>
+          <div className="space-y-2 pr-1">
             {isLoading && articles.length === 0 ? (
               <div className="space-y-2 p-2">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="h-24 animate-pulse rounded-md bg-accent"
+                    className="h-24 animate-pulse rounded-md bg-background/55"
                   />
                 ))}
               </div>

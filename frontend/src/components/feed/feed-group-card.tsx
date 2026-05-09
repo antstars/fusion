@@ -80,10 +80,10 @@ export function FeedGroupCard({
   t,
 }: FeedGroupCardProps) {
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="glass-panel overflow-hidden rounded-lg border">
       <div
         className={cn(
-          "group/header flex items-center justify-between bg-muted/50 px-3.5 py-2.5",
+          "group/header flex items-center justify-between bg-background/45 px-3.5 py-2.5",
           isCollapsed ? "rounded-lg" : "rounded-t-lg",
         )}
       >
@@ -207,7 +207,7 @@ export function FeedGroupCard({
             <div
               key={feed.id}
               className={cn(
-                "flex items-center justify-between py-2.5 pl-8 pr-3.5 transition-colors hover:bg-accent/30 sm:pl-11",
+                "flex items-center justify-between py-2.5 pl-8 pr-3.5 transition-colors hover:bg-background/50 sm:pl-11",
                 index < groupFeeds.length - 1 && "border-b border-border/50",
               )}
             >
