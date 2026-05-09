@@ -14,14 +14,11 @@ import {
   itemQueries,
   useItems,
   useMarkItemsRead,
-  useMarkItemsUnread,
 } from "@/queries/items";
 import { useFeedLookup } from "@/queries/feeds";
 import { useGroups } from "@/queries/groups";
 import {
   useBookmarkLookup,
-  useCreateBookmark,
-  useDeleteBookmark,
   useStarredItems,
 } from "@/queries/bookmarks";
 import { queryKeys } from "@/queries/keys";
@@ -64,10 +61,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   const { data: groups = [] } = useGroups();
   const { feeds, getFeedById, isLoading: isFeedsLoading } = useFeedLookup();
   const markItemsRead = useMarkItemsRead();
-  const markItemsUnread = useMarkItemsUnread();
-  const { isItemStarred, getBookmarkByItemId } = useBookmarkLookup();
-  const createBookmark = useCreateBookmark();
-  const deleteBookmark = useDeleteBookmark();
+  const { getBookmarkByItemId } = useBookmarkLookup();
 
   // Flatten infinite query pages
   const items = useMemo(
@@ -166,74 +160,6 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
   const unreadCount = unreadDisplayCount;
   const hasNoFeeds = !isFeedsLoading && feeds.length === 0;
-
-  const handleToggleRead = useCallback(
-    async (article: Item) => {
-      if (isStarredMode && article.id <= 0) {
-        return;
-      }
-
-      let unread = getArticleUnread(article);
-
-      if (isStarredMode && article.id > 0) {
-        try {
-          const detail = await queryClient.ensureQueryData(
-            itemQueries.detail(article.id),
-          );
-          if (detail === undefined) {
-            return;
-          }
-
-          unread = detail.unread;
-        } catch {
-          return;
-        }
-      }
-
-      try {
-        if (unread) {
-          await markItemsRead.mutateAsync([article.id]);
-        } else {
-          await markItemsUnread.mutateAsync([article.id]);
-        }
-
-        if (isStarredMode) {
-          setStarredUnreadOverrides((prev) => ({
-            ...prev,
-            [article.id]: !unread,
-          }));
-        }
-      } catch (error) {
-        console.error("Failed to toggle read status:", error);
-      }
-    },
-    [
-      getArticleUnread,
-      isStarredMode,
-      markItemsRead,
-      markItemsUnread,
-      queryClient,
-    ],
-  );
-
-  const handleToggleStar = useCallback(
-    async (article: Item) => {
-      try {
-        if (isItemStarred(article.id)) {
-          const bookmark = getBookmarkByItemId(article.id);
-          if (bookmark) {
-            await deleteBookmark.mutateAsync(bookmark.id);
-          }
-          return;
-        }
-
-        await createBookmark.mutateAsync(article);
-      } catch (error) {
-        console.error("Failed to toggle star:", error);
-      }
-    },
-    [createBookmark, deleteBookmark, getBookmarkByItemId, isItemStarred],
-  );
 
   const handleMarkAllAsRead = async () => {
     let unreadIds = displayArticles
@@ -367,10 +293,6 @@ export function ArticleList({ compact = false }: ArticleListProps) {
                       compact={compact}
                       isSelected={selectedArticleId === article.id}
                       onSelectArticle={setSelectedArticle}
-                      onToggleRead={handleToggleRead}
-                      onToggleStar={handleToggleStar}
-                      canToggleRead={article.id > 0}
-                      isStarred={isItemStarred(article.id)}
                       feedName={feed?.name ?? bookmark?.feed_name ?? t("common.unknown")}
                       feedFaviconUrl={
                         feed ? getFaviconUrl(feed.link, feed.site_url) : null
