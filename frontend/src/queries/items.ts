@@ -24,6 +24,9 @@ type ItemsMutationContext = {
   prevItemDetails: Array<readonly [number, Item | undefined]>;
   prevFeeds: Feed[] | undefined;
 };
+interface SetItemsReadStateOptions {
+  keepReadItemsInUnreadLists?: boolean;
+}
 
 function buildListItemsParams(
   filters: NormalizedItemFilters,
@@ -101,51 +104,90 @@ function applyOptimisticItemReadState(
   ids: number[],
   targetUnread: boolean,
   prevFeeds: Feed[] | undefined,
+  options: SetItemsReadStateOptions = {},
 ) {
   const idSet = new Set(ids);
   const feedDeltaMap = new Map<number, number>();
   const updatedItemsById = new Map<number, Item>();
   const changedIds = new Set<number>();
 
-  qc.setQueriesData<ItemsInfiniteData>(
-    { queryKey: queryKeys.items.lists() },
-    (old) => {
+  const listEntries = qc.getQueriesData<ItemsInfiniteData>({
+    queryKey: queryKeys.items.lists(),
+  });
+
+  for (const [queryKey] of listEntries) {
+    const filters = queryKey[2] as NormalizedItemFilters | undefined;
+    const removeReadItems =
+      filters?.unread === true &&
+      !targetUnread &&
+      !options.keepReadItemsInUnreadLists;
+
+    qc.setQueryData<ItemsInfiniteData>(queryKey, (old) => {
       if (!old) return old;
+
+      let removedCount = 0;
+      const pages = old.pages.map((page) => {
+        const data: Item[] = [];
+
+        for (const item of page.data) {
+          if (!idSet.has(item.id) || item.unread === targetUnread) {
+            data.push(item);
+            continue;
+          }
+
+          if (!changedIds.has(item.id)) {
+            const delta = targetUnread ? 1 : -1;
+            feedDeltaMap.set(
+              item.feed_id,
+              (feedDeltaMap.get(item.feed_id) ?? 0) + delta,
+            );
+            changedIds.add(item.id);
+          }
+
+          const updatedItem = { ...item, unread: targetUnread };
+          updatedItemsById.set(item.id, updatedItem);
+
+          if (removeReadItems) {
+            removedCount += 1;
+            continue;
+          }
+
+          data.push(updatedItem);
+        }
+
+        return { ...page, data };
+      });
 
       return {
         ...old,
-        pages: old.pages.map((page) => ({
+        pages: pages.map((page) => ({
           ...page,
-          data: page.data.map((item) => {
-            if (!idSet.has(item.id) || item.unread === targetUnread) {
-              return item;
-            }
-
-            if (!changedIds.has(item.id)) {
-              const delta = targetUnread ? 1 : -1;
-              feedDeltaMap.set(
-                item.feed_id,
-                (feedDeltaMap.get(item.feed_id) ?? 0) + delta,
-              );
-              changedIds.add(item.id);
-            }
-
-            const updatedItem = { ...item, unread: targetUnread };
-            updatedItemsById.set(item.id, updatedItem);
-            return updatedItem;
-          }),
+          total: removeReadItems
+            ? Math.max(0, page.total - removedCount)
+            : page.total,
         })),
       };
-    },
-  );
+    });
+  }
 
   for (const id of ids) {
     const optimisticItem = updatedItemsById.get(id);
     qc.setQueryData<Item>(queryKeys.items.detail(id), (old) =>
       old
-        ? old.unread !== targetUnread
-          ? { ...old, unread: targetUnread }
-          : old
+        ? (() => {
+            if (old.unread === targetUnread) return old;
+
+            if (!changedIds.has(old.id)) {
+              const delta = targetUnread ? 1 : -1;
+              feedDeltaMap.set(
+                old.feed_id,
+                (feedDeltaMap.get(old.feed_id) ?? 0) + delta,
+              );
+              changedIds.add(old.id);
+            }
+
+            return { ...old, unread: targetUnread };
+          })()
         : optimisticItem,
     );
   }
@@ -184,7 +226,10 @@ function rollbackItemsMutation(
   }
 }
 
-function useSetItemsReadState(targetUnread: boolean) {
+function useSetItemsReadState(
+  targetUnread: boolean,
+  options: SetItemsReadStateOptions = {},
+) {
   const qc = useQueryClient();
 
   return useMutation({
@@ -204,7 +249,13 @@ function useSetItemsReadState(targetUnread: boolean) {
       ]);
 
       const context = snapshotItemsMutationState(qc, ids);
-      applyOptimisticItemReadState(qc, ids, targetUnread, context.prevFeeds);
+      applyOptimisticItemReadState(
+        qc,
+        ids,
+        targetUnread,
+        context.prevFeeds,
+        options,
+      );
       return context;
     },
     onError: (_error, _ids, context) => {
@@ -216,8 +267,8 @@ function useSetItemsReadState(targetUnread: boolean) {
   });
 }
 
-export function useMarkItemsRead() {
-  return useSetItemsReadState(false);
+export function useMarkItemsRead(options?: SetItemsReadStateOptions) {
+  return useSetItemsReadState(false, options);
 }
 
 export function useMarkItemsUnread() {

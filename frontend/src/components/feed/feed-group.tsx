@@ -30,11 +30,9 @@ export function FeedGroup({ groupId, name, feeds }: FeedGroupProps) {
     >
       <div
         className={cn(
-          "flex w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors",
-          isSelected
-            ? "bg-accent text-accent-foreground"
-            : "hover:bg-accent/50",
+          "sidebar-row flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-sm transition-colors",
         )}
+        data-selected={isSelected}
       >
         <button
           type="button"
@@ -58,14 +56,12 @@ export function FeedGroup({ groupId, name, feeds }: FeedGroupProps) {
         >
           <span className="block min-w-0 flex-1 truncate">{name}</span>
           {unreadCount > 0 && (
-            <span className="shrink-0 text-[11px] text-muted-foreground">
-              {unreadCount}
-            </span>
+            <span className="sidebar-count shrink-0">{unreadCount}</span>
           )}
         </button>
       </div>
       <CollapsibleContent>
-        <div className="w-full min-w-0 pl-5">
+        <div className="w-full min-w-0 pl-5 pt-0.5">
           {feeds.map((feed) => (
             <FeedItem key={feed.id} feed={feed} />
           ))}

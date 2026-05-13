@@ -175,7 +175,7 @@ export function ImportOpmlDialog() {
   return (
     <Dialog open={isImportOpmlOpen} onOpenChange={setImportOpmlOpen}>
       <DialogContent
-        className="flex w-full max-w-[480px] flex-col gap-0 overflow-hidden p-0"
+        className="glass-panel-strong flex w-full max-w-[480px] flex-col gap-0 overflow-hidden p-0"
         showCloseButton={false}
       >
         <DialogHeader className="flex flex-row items-center justify-between border-b px-5 py-4">
@@ -205,7 +205,7 @@ export function ImportOpmlDialog() {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             className={cn(
-              "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors",
+              "glass-control flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors",
               isDragging
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-muted-foreground/50",

@@ -13,9 +13,9 @@ export function Sidebar() {
   const isFeedsPage = pathname === "/feeds";
 
   return (
-    <aside className="sidebar-typography flex h-full w-full flex-none flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground md:w-60">
+    <aside className="sidebar-typography app-panel flex h-full w-full flex-none flex-col overflow-hidden border-r text-sidebar-foreground shadow-none md:w-60">
       {/* Header */}
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border/70 px-4">
         <img
           src="/icon-32.png"
           alt={t("common.fusionLogo")}
@@ -29,14 +29,14 @@ export function Sidebar() {
       {/* Search button */}
       <div className="px-2 pt-3">
         <button
-          className="flex w-full items-center justify-between rounded-md bg-muted px-3 py-2 text-muted-foreground transition-colors hover:bg-accent"
+          className="flex h-10 w-full items-center justify-between rounded-md border border-sidebar-border bg-background px-3 text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
           onClick={() => setSearchOpen(true)}
         >
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             <span className="text-sm">{t("sidebar.search")}</span>
           </div>
-          <kbd className="rounded bg-accent px-1.5 py-0.5 font-mono text-[11px] font-medium">
+          <kbd className="rounded bg-background/70 px-1.5 py-0.5 font-mono text-[11px] font-medium">
             Cmd+K / ?
           </kbd>
         </button>
@@ -46,21 +46,19 @@ export function Sidebar() {
       <FeedList />
 
       {/* Footer */}
-      <div className="p-2">
+      <div className="border-t border-sidebar-border/60 p-2">
         <button
           className={cn(
-            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-            isFeedsPage
-              ? "bg-accent text-accent-foreground"
-              : "hover:bg-accent/50",
+            "sidebar-row flex h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
           )}
+          data-selected={isFeedsPage}
           onClick={() => navigate({ to: "/feeds" })}
         >
           <Rss className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span>{t("sidebar.manageFeeds")}</span>
         </button>
         <button
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent/50"
+          className="sidebar-row flex h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors"
           onClick={() => setSettingsOpen(true)}
         >
           <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
