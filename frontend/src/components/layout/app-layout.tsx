@@ -1,22 +1,56 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Sidebar } from "./sidebar";
-import { ArticleDrawer } from "@/components/article/article-drawer";
-import { SearchDialog } from "@/components/search/search-dialog";
-import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { AddGroupDialog } from "@/components/group/add-group-dialog";
-import { AddFeedDialog } from "@/components/feed/add-feed-dialog";
-import { EditFeedDialog } from "@/components/feed/edit-feed-dialog";
-import { ImportOpmlDialog } from "@/components/feed/import-opml-dialog";
-import { ShortcutsDialog } from "@/components/layout/shortcuts-dialog";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUrlState } from "@/hooks/use-url-state";
 import { useUIStore } from "@/store/ui";
 
+const ArticleDrawer = lazy(() =>
+  import("@/components/article/article-drawer").then((module) => ({
+    default: module.ArticleDrawer,
+  })),
+);
+const SearchDialog = lazy(() =>
+  import("@/components/search/search-dialog").then((module) => ({
+    default: module.SearchDialog,
+  })),
+);
+const SettingsDialog = lazy(() =>
+  import("@/components/settings/settings-dialog").then((module) => ({
+    default: module.SettingsDialog,
+  })),
+);
+const AddGroupDialog = lazy(() =>
+  import("@/components/group/add-group-dialog").then((module) => ({
+    default: module.AddGroupDialog,
+  })),
+);
+const AddFeedDialog = lazy(() =>
+  import("@/components/feed/add-feed-dialog").then((module) => ({
+    default: module.AddFeedDialog,
+  })),
+);
+const EditFeedDialog = lazy(() =>
+  import("@/components/feed/edit-feed-dialog").then((module) => ({
+    default: module.EditFeedDialog,
+  })),
+);
+const ImportOpmlDialog = lazy(() =>
+  import("@/components/feed/import-opml-dialog").then((module) => ({
+    default: module.ImportOpmlDialog,
+  })),
+);
+const ShortcutsDialog = lazy(() =>
+  import("@/components/layout/shortcuts-dialog").then((module) => ({
+    default: module.ShortcutsDialog,
+  })),
+);
+
 interface AppLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
@@ -24,6 +58,24 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isMobile = useIsMobile();
   const isSidebarOpen = useUIStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
+  const isSearchOpen = useUIStore((s) => s.isSearchOpen);
+  const isSettingsOpen = useUIStore((s) => s.isSettingsOpen);
+  const isAddGroupOpen = useUIStore((s) => s.isAddGroupOpen);
+  const isAddFeedOpen = useUIStore((s) => s.isAddFeedOpen);
+  const isEditFeedOpen = useUIStore((s) => s.isEditFeedOpen);
+  const isImportOpmlOpen = useUIStore((s) => s.isImportOpmlOpen);
+  const isShortcutsOpen = useUIStore((s) => s.isShortcutsOpen);
+  const { selectedArticleId } = useUrlState();
+  const shouldRenderArticleDrawer = useHasBeenEnabled(
+    isMobile && selectedArticleId !== null,
+  );
+  const shouldRenderSearchDialog = useHasBeenEnabled(isSearchOpen);
+  const shouldRenderSettingsDialog = useHasBeenEnabled(isSettingsOpen);
+  const shouldRenderAddGroupDialog = useHasBeenEnabled(isAddGroupOpen);
+  const shouldRenderAddFeedDialog = useHasBeenEnabled(isAddFeedOpen);
+  const shouldRenderEditFeedDialog = useHasBeenEnabled(isEditFeedOpen);
+  const shouldRenderImportOpmlDialog = useHasBeenEnabled(isImportOpmlOpen);
+  const shouldRenderShortcutsDialog = useHasBeenEnabled(isShortcutsOpen);
 
   // Register global keyboard shortcuts
   useKeyboardShortcuts();
@@ -57,14 +109,28 @@ export function AppLayout({ children }: AppLayoutProps) {
       <main className="flex-1 overflow-hidden">{children}</main>
 
       {/* Modals and drawers */}
-      {isMobile && <ArticleDrawer />}
-      <SearchDialog />
-      <SettingsDialog />
-      <AddGroupDialog />
-      <AddFeedDialog />
-      <EditFeedDialog />
-      <ImportOpmlDialog />
-      <ShortcutsDialog />
+      <Suspense fallback={null}>
+        {isMobile && shouldRenderArticleDrawer && <ArticleDrawer />}
+        {shouldRenderSearchDialog && <SearchDialog />}
+        {shouldRenderSettingsDialog && <SettingsDialog />}
+        {shouldRenderAddGroupDialog && <AddGroupDialog />}
+        {shouldRenderAddFeedDialog && <AddFeedDialog />}
+        {shouldRenderEditFeedDialog && <EditFeedDialog />}
+        {shouldRenderImportOpmlDialog && <ImportOpmlDialog />}
+        {shouldRenderShortcutsDialog && <ShortcutsDialog />}
+      </Suspense>
     </div>
   );
+}
+
+function useHasBeenEnabled(enabled: boolean): boolean {
+  const [hasBeenEnabled, setHasBeenEnabled] = useState(enabled);
+
+  useEffect(() => {
+    if (enabled) {
+      setHasBeenEnabled(true);
+    }
+  }, [enabled]);
+
+  return hasBeenEnabled;
 }

@@ -17,7 +17,7 @@ export function Sidebar() {
       {/* Header */}
       <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
         <img
-          src="/icon-96.png"
+          src="/icon-32.png"
           alt={t("common.fusionLogo")}
           width={32}
           height={32}

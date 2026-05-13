@@ -16,14 +16,22 @@ func (h *Handler) setupFrontendRoutes(r *gin.Engine) error {
 		return err
 	}
 
-	r.StaticFS("/assets", http.FS(frontendFS))
+	setupFrontendRoutesWithFS(r, frontendFS)
 
+	return nil
+}
+
+func setupFrontendRoutesWithFS(r *gin.Engine, frontendFS fs.FS) {
 	fileServer := http.FileServer(http.FS(frontendFS))
+	r.GET("/assets/*filepath", func(c *gin.Context) {
+		serveFrontendRoute(c, frontendFS, fileServer)
+	})
+	r.HEAD("/assets/*filepath", func(c *gin.Context) {
+		serveFrontendRoute(c, frontendFS, fileServer)
+	})
 	r.NoRoute(func(c *gin.Context) {
 		serveFrontendRoute(c, frontendFS, fileServer)
 	})
-
-	return nil
 }
 
 func serveFrontendRoute(c *gin.Context, frontendFS fs.FS, fileServer http.Handler) {
@@ -68,6 +76,7 @@ func serveFrontendRoute(c *gin.Context, frontendFS fs.FS, fileServer http.Handle
 }
 
 func serveFrontendIndex(c *gin.Context, fileServer http.Handler) {
+	setFrontendCacheHeaders(c, "index.html")
 	serveFrontendRequestPath(c, fileServer, "/")
 }
 
@@ -79,10 +88,34 @@ func setFrontendSecurityHeaders(c *gin.Context) {
 }
 
 func serveFrontendRequestPath(c *gin.Context, fileServer http.Handler, requestPath string) {
+	setFrontendCacheHeaders(c, strings.TrimPrefix(requestPath, "/"))
+
 	originalPath := c.Request.URL.Path
 	c.Request.URL.Path = requestPath
 	fileServer.ServeHTTP(c.Writer, c.Request)
 	c.Request.URL.Path = originalPath
+}
+
+func setFrontendCacheHeaders(c *gin.Context, filePath string) {
+	cleanedPath := path.Clean("/" + filePath)
+
+	switch {
+	case strings.HasPrefix(cleanedPath, "/assets/"):
+		c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	case cleanedPath == "/index.html" || cleanedPath == "/manifest.json" || cleanedPath == "/sw.js":
+		c.Header("Cache-Control", "no-cache")
+	case isFrontendIconPath(cleanedPath):
+		c.Header("Cache-Control", "public, max-age=86400")
+	default:
+		c.Header("Cache-Control", "no-cache")
+	}
+}
+
+func isFrontendIconPath(filePath string) bool {
+	base := path.Base(filePath)
+	return base == "favicon.ico" ||
+		base == "apple-touch-icon.png" ||
+		(strings.HasPrefix(base, "icon-") && strings.HasSuffix(base, ".png"))
 }
 
 func frontendFileExists(frontendFS fs.FS, filePath string) bool {

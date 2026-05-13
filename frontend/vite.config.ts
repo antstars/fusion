@@ -22,10 +22,40 @@ function getGitVersion(): string {
   }
 }
 
+function getVendorChunk(id: string): string | undefined {
+  const normalizedId = id.replaceAll("\\", "/");
+
+  if (!normalizedId.includes("node_modules")) {
+    return undefined;
+  }
+
+  if (normalizedId.includes("/react/") || normalizedId.includes("/react-dom/")) {
+    return "vendor-react";
+  }
+  if (normalizedId.includes("/@tanstack/")) {
+    return "vendor-tanstack";
+  }
+  if (normalizedId.includes("/@radix-ui/") || normalizedId.includes("/radix-ui/")) {
+    return "vendor-radix";
+  }
+  if (normalizedId.includes("/lucide-react/")) {
+    return "vendor-icons";
+  }
+
+  return undefined;
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(getGitVersion()),
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: getVendorChunk,
+      },
+    },
   },
   plugins: [react(), tanstackRouter(), tailwindcss()],
   resolve: {
