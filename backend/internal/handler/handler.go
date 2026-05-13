@@ -56,9 +56,6 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 	if err != nil {
 		return nil, fmt.Errorf("hash password: %w", err)
 	}
-	if responseCache == nil {
-		responseCache = cache.NoopCache{}
-	}
 	cacheTTLSeconds := config.Redis.CacheTTLSeconds
 	if cacheTTLSeconds == 0 {
 		cacheTTLSeconds = 120
