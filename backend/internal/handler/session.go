@@ -115,6 +115,11 @@ type loginRequest struct {
 }
 
 func (h *Handler) login(c *gin.Context) {
+	if !h.passwordLoginEnabled {
+		passwordLoginDisabledError(c)
+		return
+	}
+
 	ip := c.ClientIP()
 	allowed, retryAfter := h.limiter.allow(ip, time.Now())
 	if !allowed {

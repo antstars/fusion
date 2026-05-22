@@ -98,6 +98,38 @@ func TestFeverAuthFailure(t *testing.T) {
 	}
 }
 
+func TestFeverAuthDisabledWithoutPassword(t *testing.T) {
+	h := &Handler{
+		passwordLoginEnabled: false,
+		feverAPIKey:          deriveFeverAPIKey("fusion", ""),
+		limiter:              newLoginLimiter(10, 60, 300),
+	}
+
+	r := newTestRouter()
+	r.POST("/fever", h.fever)
+
+	w := performRequest(
+		r,
+		http.MethodPost,
+		"/fever",
+		strings.NewReader(feverRequestBody(deriveFeverAPIKey("fusion", ""), nil)),
+		map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+	)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+
+	if payload["auth"] != float64(0) {
+		t.Fatalf("expected auth=0, got %#v", payload["auth"])
+	}
+}
+
 func TestFeverReadAndMarkFlows(t *testing.T) {
 	h, st := newFeverTestHandler(t)
 

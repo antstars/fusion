@@ -42,3 +42,14 @@ func TestMarkItemsBatchValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestListItemsRejectsInvalidOrderBy(t *testing.T) {
+	r := newTestRouter()
+	r.GET("/api/items", (&Handler{}).listItems)
+
+	w := performRequest(r, http.MethodGet, "/api/items?order_by=pub_date:desc", nil, nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}

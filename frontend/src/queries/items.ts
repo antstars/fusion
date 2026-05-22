@@ -36,7 +36,7 @@ function buildListItemsParams(
   const params: ListItemsParams = {
     limit: pageSize,
     offset,
-    order_by: "pub_date:desc",
+    order_by: "pub_date",
   };
 
   if (filters.feedId) params.feed_id = filters.feedId;

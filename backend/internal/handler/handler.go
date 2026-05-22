@@ -19,14 +19,15 @@ import (
 )
 
 type Handler struct {
-	store        *store.Store
-	config       *config.Config
-	cache        cache.Cache
-	cacheTTL     time.Duration
-	passwordHash string // bcrypt hash computed at startup
-	feverAPIKey  string // md5(username:password) used by Fever API
-	allowAnonAPI bool   // true when both password and OIDC auth are disabled
-	puller       interface {
+	store                *store.Store
+	config               *config.Config
+	cache                cache.Cache
+	cacheTTL             time.Duration
+	passwordHash         string // bcrypt hash computed at startup
+	passwordLoginEnabled bool
+	feverAPIKey          string // md5(username:password) used by Fever API
+	allowAnonAPI         bool   // true when both password and OIDC auth are disabled
+	puller               interface {
 		RefreshFeed(ctx context.Context, feedID int64) error
 		RefreshAll(ctx context.Context) (int, error)
 	}
@@ -51,10 +52,17 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 	RefreshFeed(ctx context.Context, feedID int64) error
 	RefreshAll(ctx context.Context) (int, error)
 }, responseCache cache.Cache) (*Handler, error) {
-	// Hash password at startup for later verification
-	passwordHash, err := auth.HashPassword(config.Password)
-	if err != nil {
-		return nil, fmt.Errorf("hash password: %w", err)
+	password := config.Password
+	passwordLoginEnabled := strings.TrimSpace(password) != ""
+	passwordHash := ""
+	feverAPIKey := ""
+	if passwordLoginEnabled {
+		var err error
+		passwordHash, err = auth.HashPassword(password)
+		if err != nil {
+			return nil, fmt.Errorf("hash password: %w", err)
+		}
+		feverAPIKey = deriveFeverAPIKey(config.FeverUsername, password)
 	}
 	cacheTTLSeconds := config.Redis.CacheTTLSeconds
 	if cacheTTLSeconds == 0 {
@@ -62,16 +70,17 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 	}
 
 	h := &Handler{
-		store:        store,
-		config:       config,
-		cache:        responseCache,
-		cacheTTL:     time.Duration(cacheTTLSeconds) * time.Second,
-		passwordHash: passwordHash,
-		feverAPIKey:  deriveFeverAPIKey(config.FeverUsername, config.Password),
-		allowAnonAPI: strings.TrimSpace(config.Password) == "" && strings.TrimSpace(config.OIDCIssuer) == "",
-		puller:       puller,
-		sessions:     make(map[string]int64),
-		limiter:      newLoginLimiter(config.LoginRateLimit, config.LoginWindow, config.LoginBlock),
+		store:                store,
+		config:               config,
+		cache:                responseCache,
+		cacheTTL:             time.Duration(cacheTTLSeconds) * time.Second,
+		passwordHash:         passwordHash,
+		passwordLoginEnabled: passwordLoginEnabled,
+		feverAPIKey:          feverAPIKey,
+		allowAnonAPI:         strings.TrimSpace(config.Password) == "" && strings.TrimSpace(config.OIDCIssuer) == "",
+		puller:               puller,
+		sessions:             make(map[string]int64),
+		limiter:              newLoginLimiter(config.LoginRateLimit, config.LoginWindow, config.LoginBlock),
 	}
 
 	if h.allowAnonAPI {

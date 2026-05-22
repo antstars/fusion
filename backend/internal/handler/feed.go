@@ -58,6 +58,7 @@ type batchCreateFeedItem struct {
 }
 
 const refreshAllTimeout = 30 * time.Minute
+const maxBatchCreateFeeds = 100
 
 func (h *Handler) listFeeds(c *gin.Context) {
 	feeds, err := h.store.ListFeeds()
@@ -375,6 +376,10 @@ func (h *Handler) batchCreateFeeds(c *gin.Context) {
 	var req batchCreateFeedsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		badRequestError(c, "invalid request")
+		return
+	}
+	if len(req.Feeds) == 0 || len(req.Feeds) > maxBatchCreateFeeds {
+		badRequestError(c, "invalid feeds")
 		return
 	}
 

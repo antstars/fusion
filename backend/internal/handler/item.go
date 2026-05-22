@@ -70,6 +70,10 @@ func (h *Handler) listItems(c *gin.Context) {
 	}
 
 	if orderBy := c.Query("order_by"); orderBy != "" {
+		if orderBy != "pub_date" && orderBy != "created_at" {
+			badRequestError(c, "invalid order_by")
+			return
+		}
 		params.OrderBy = orderBy
 	} else {
 		params.OrderBy = "pub_date"

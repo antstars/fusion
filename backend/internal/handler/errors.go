@@ -33,6 +33,10 @@ func unauthorizedError(c *gin.Context) {
 	c.JSON(401, gin.H{"error": "unauthorized"})
 }
 
+func passwordLoginDisabledError(c *gin.Context) {
+	c.JSON(401, gin.H{"error": "password login disabled"})
+}
+
 // tooManyRequestsError returns 429 and sets Retry-After when available.
 func tooManyRequestsError(c *gin.Context, retryAfterSec int64) {
 	if retryAfterSec > 0 {

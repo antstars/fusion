@@ -19,9 +19,10 @@ func newTestSessionHandler(t *testing.T, password string) *Handler {
 	}
 
 	return &Handler{
-		passwordHash: hash,
-		sessions:     make(map[string]int64),
-		limiter:      newLoginLimiter(10, 60, 300),
+		passwordHash:         hash,
+		passwordLoginEnabled: strings.TrimSpace(password) != "",
+		sessions:             make(map[string]int64),
+		limiter:              newLoginLimiter(10, 60, 300),
 	}
 }
 
@@ -40,9 +41,15 @@ func TestLogin(t *testing.T) {
 			wantStatus:     http.StatusBadRequest,
 		},
 		{
-			name:           "accepts empty password when configured",
+			name:           "rejects empty password when password login is disabled",
 			passwordHashOf: "",
 			body:           `{"password":""}`,
+			wantStatus:     http.StatusUnauthorized,
+		},
+		{
+			name:           "accepts configured password",
+			passwordHashOf: "secret",
+			body:           `{"password":"secret"}`,
 			wantStatus:     http.StatusOK,
 			wantCookie:     true,
 		},
