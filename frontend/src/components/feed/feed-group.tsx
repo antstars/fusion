@@ -19,7 +19,7 @@ export function FeedGroup({
   feeds,
   showTotalCount = false,
 }: FeedGroupProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const { selectedGroupId, setSelectedGroup } = useUrlState();
   const isSelected = selectedGroupId === groupId;
 

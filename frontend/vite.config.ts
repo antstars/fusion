@@ -14,12 +14,16 @@ function getPackageVersion(): string {
   return typeof packageJson.version === "string" ? packageJson.version : "";
 }
 
-function getGitVersion(): string {
+function getFallbackGitVersion(): string {
   try {
     return execSync("git describe --tags --always").toString().trim();
   } catch {
-    return getPackageVersion();
+    return "";
   }
+}
+
+function getAppVersion(): string {
+  return getPackageVersion() || getFallbackGitVersion();
 }
 
 function getVendorChunk(id: string): string | undefined {
@@ -48,7 +52,7 @@ function getVendorChunk(id: string): string | undefined {
 // https://vite.dev/config/
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(getGitVersion()),
+    __APP_VERSION__: JSON.stringify(getAppVersion()),
   },
   build: {
     rollupOptions: {
