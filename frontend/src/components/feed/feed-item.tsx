@@ -19,6 +19,8 @@ export function FeedItem({ feed }: FeedItemProps) {
 
   const isSelected = selectedFeedId === feed.id;
   const faviconUrl = getFaviconUrl(feed.link, feed.site_url);
+  const displayCount = feed.unread_count > 0 ? feed.unread_count : feed.item_count;
+  const isTotalCount = feed.unread_count === 0;
 
   const handleSettingsClick = () => {
     setEditFeedOpen(true, feed);
@@ -42,8 +44,13 @@ export function FeedItem({ feed }: FeedItemProps) {
         </span>
       </button>
       <div className="ml-2 flex h-6 shrink-0 items-center justify-center">
-        <span className="sidebar-count md:group-hover:hidden md:group-focus-within:hidden">
-          {feed.unread_count > 0 ? feed.unread_count : ""}
+        <span
+          className={cn(
+            "sidebar-count md:group-hover:hidden md:group-focus-within:hidden",
+            isTotalCount && "text-muted-foreground/70",
+          )}
+        >
+          {displayCount > 0 ? displayCount : ""}
         </span>
         <Button
           variant="ghost"

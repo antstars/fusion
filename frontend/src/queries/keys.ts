@@ -41,4 +41,8 @@ export const queryKeys = {
     all: ["bookmarks"] as const,
     list: () => [...queryKeys.bookmarks.all, "list"] as const,
   },
+  readLater: {
+    all: ["read-later"] as const,
+    list: () => [...queryKeys.readLater.all, "list"] as const,
+  },
 };

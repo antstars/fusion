@@ -79,3 +79,15 @@ type Bookmark struct {
 	FeedName  string `json:"feed_name"`
 	CreatedAt int64  `json:"created_at"`
 }
+
+// ReadLaterItem represents a saved reading-queue snapshot.
+type ReadLaterItem struct {
+	ID        int64  `json:"id"`
+	ItemID    *int64 `json:"item_id"` // nullable
+	Link      string `json:"link"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	PubDate   int64  `json:"pub_date"`
+	FeedName  string `json:"feed_name"`
+	CreatedAt int64  `json:"created_at"`
+}

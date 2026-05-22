@@ -35,7 +35,7 @@ func resetTestDB(t *testing.T, store *Store) {
 	t.Helper()
 
 	if _, err := store.db.Exec(`
-		TRUNCATE TABLE bookmarks, items, feed_fetch_state, feeds, groups RESTART IDENTITY CASCADE;
+		TRUNCATE TABLE read_later_items, bookmarks, items, feed_fetch_state, feeds, groups RESTART IDENTITY CASCADE;
 		INSERT INTO groups (id, name) VALUES (1, 'Default');
 		SELECT setval(pg_get_serial_sequence('groups', 'id'), 1);
 	`); err != nil {
@@ -86,6 +86,17 @@ func mustCreateBookmark(t *testing.T, store *Store, itemID *int64, link, title, 
 	}
 
 	return bookmark
+}
+
+func mustCreateReadLaterItem(t *testing.T, store *Store, itemID *int64, link, title, content string, pubDate int64, feedName string) *model.ReadLaterItem {
+	t.Helper()
+
+	item, err := store.CreateReadLaterItem(itemID, link, title, content, pubDate, feedName)
+	if err != nil {
+		t.Fatalf("CreateReadLaterItem() failed: %v", err)
+	}
+
+	return item
 }
 
 func TestNew(t *testing.T) {

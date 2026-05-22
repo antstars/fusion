@@ -68,6 +68,18 @@ CREATE TABLE IF NOT EXISTS bookmarks (
 );
 CREATE INDEX IF NOT EXISTS idx_bookmarks_created_at ON bookmarks(created_at DESC);
 
+CREATE TABLE IF NOT EXISTS read_later_items (
+	id BIGSERIAL PRIMARY KEY,
+	item_id BIGINT REFERENCES items(id) ON UPDATE CASCADE ON DELETE SET NULL,
+	link TEXT NOT NULL UNIQUE,
+	title TEXT DEFAULT '',
+	content TEXT DEFAULT '',
+	pub_date BIGINT DEFAULT 0,
+	feed_name TEXT DEFAULT '',
+	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
+CREATE INDEX IF NOT EXISTS idx_read_later_items_created_at ON read_later_items(created_at DESC);
+
 CREATE TABLE IF NOT EXISTS feed_fetch_state (
 	feed_id BIGINT PRIMARY KEY REFERENCES feeds(id) ON UPDATE CASCADE ON DELETE CASCADE,
 	etag TEXT NOT NULL DEFAULT '',
@@ -86,7 +98,7 @@ CREATE TABLE IF NOT EXISTS feed_fetch_state (
 );
 CREATE INDEX IF NOT EXISTS idx_feed_fetch_state_next_check_at ON feed_fetch_state(next_check_at);
 
-INSERT INTO schema_migrations (version) VALUES (1), (2)
+INSERT INTO schema_migrations (version) VALUES (1), (2), (3)
 ON CONFLICT (version) DO NOTHING;
 `
 

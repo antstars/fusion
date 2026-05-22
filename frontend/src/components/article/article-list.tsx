@@ -21,6 +21,10 @@ import {
   useBookmarkLookup,
   useStarredItems,
 } from "@/queries/bookmarks";
+import {
+  useReadLaterArticles,
+  useReadLaterLookup,
+} from "@/queries/read-later";
 import { queryKeys } from "@/queries/keys";
 import { getFaviconUrl } from "@/lib/api/favicon";
 import { useI18n } from "@/lib/i18n";
@@ -50,6 +54,8 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   const articlePageSize = usePreferencesStore((state) => state.articlePageSize);
 
   const isStarredMode = articleFilter === "starred";
+  const isReadLaterMode = articleFilter === "read-later";
+  const isSavedMode = isStarredMode || isReadLaterMode;
 
   // Items query for non-starred modes
   const itemsQuery = useItems({
@@ -62,6 +68,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   const { feeds, getFeedById, isLoading: isFeedsLoading } = useFeedLookup();
   const markItemsRead = useMarkItemsRead();
   const { getBookmarkByItemId } = useBookmarkLookup();
+  const { getReadLaterByItemId } = useReadLaterLookup();
 
   // Flatten infinite query pages
   const items = useMemo(
@@ -73,8 +80,16 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     feedId: selectedFeedId,
     groupId: selectedGroupId,
   });
+  const readLaterArticles = useReadLaterArticles({
+    feedId: selectedFeedId,
+    groupId: selectedGroupId,
+  });
 
-  const sourceArticles = isStarredMode ? starredArticles : items;
+  const sourceArticles = isStarredMode
+    ? starredArticles
+    : isReadLaterMode
+      ? readLaterArticles
+      : items;
   const articles = useMemo(() => {
     if (articleFilter !== "unread") return sourceArticles;
 
@@ -84,7 +99,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   }, [articleFilter, selectedArticleId, sourceArticles]);
   const getArticleUnread = useCallback(
     (article: Item) => {
-      if (!isStarredMode) return article.unread;
+      if (!isSavedMode) return article.unread;
 
       const override = starredUnreadOverrides[article.id];
       if (override !== undefined) return override;
@@ -98,7 +113,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
       return article.unread;
     },
-    [isStarredMode, queryClient, starredUnreadOverrides],
+    [isSavedMode, queryClient, starredUnreadOverrides],
   );
 
   const displayArticles = useMemo(
@@ -115,14 +130,14 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     [articles, getArticleUnread],
   );
 
-  const hasMore = isStarredMode ? false : itemsQuery.hasNextPage;
-  const isLoading = isStarredMode ? false : itemsQuery.isLoading;
+  const hasMore = isSavedMode ? false : itemsQuery.hasNextPage;
+  const isLoading = isSavedMode ? false : itemsQuery.isLoading;
   const isLoadingMore = itemsQuery.isFetchingNextPage;
   const unreadDisplayCount = displayArticles.filter((a) => a.unread).length;
   const fetchNextPage = itemsQuery.fetchNextPage;
 
   useEffect(() => {
-    if (articleFilter !== "unread" || isStarredMode) return;
+    if (articleFilter !== "unread" || isSavedMode) return;
     if (!itemsQuery.hasNextPage || itemsQuery.isFetchingNextPage) return;
     if (unreadDisplayCount >= articlePageSize) return;
     if (itemsQuery.data && unreadDisplayCount === 0) {
@@ -135,7 +150,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     articleFilter,
     articlePageSize,
     fetchNextPage,
-    isStarredMode,
+    isSavedMode,
     itemsQuery.data,
     itemsQuery.hasNextPage,
     itemsQuery.isFetchingNextPage,
@@ -166,7 +181,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
       .filter((a) => a.unread && a.id > 0)
       .map((a) => a.id);
 
-    if (isStarredMode) {
+    if (isSavedMode) {
       const ids = displayArticles.filter((a) => a.id > 0).map((a) => a.id);
       const detailEntries = await Promise.all(
         ids.map(async (id) => {
@@ -191,7 +206,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     try {
       await markItemsRead.mutateAsync(unreadIds);
 
-      if (isStarredMode) {
+      if (isSavedMode) {
         setStarredUnreadOverrides((prev) => {
           const next = { ...prev };
           for (const id of unreadIds) {
@@ -243,6 +258,9 @@ export function ArticleList({ compact = false }: ArticleListProps) {
               <TabsTrigger value="starred">
                 {t("article.filter.starred")}
               </TabsTrigger>
+              <TabsTrigger value="read-later">
+                {t("article.filter.readLater")}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         )}
@@ -285,6 +303,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
                 {displayArticles.map((article) => {
                   const feed = getFeedById(article.feed_id);
                   const bookmark = getBookmarkByItemId(article.id);
+                  const readLaterItem = getReadLaterByItemId(article.id);
 
                   return (
                     <ArticleItem
@@ -293,7 +312,12 @@ export function ArticleList({ compact = false }: ArticleListProps) {
                       compact={compact}
                       isSelected={selectedArticleId === article.id}
                       onSelectArticle={setSelectedArticle}
-                      feedName={feed?.name ?? bookmark?.feed_name ?? t("common.unknown")}
+                      feedName={
+                        feed?.name ??
+                        bookmark?.feed_name ??
+                        readLaterItem?.feed_name ??
+                        t("common.unknown")
+                      }
                       feedFaviconUrl={
                         feed ? getFaviconUrl(feed.link, feed.site_url) : null
                       }

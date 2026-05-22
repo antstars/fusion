@@ -59,6 +59,17 @@ export interface Bookmark {
   created_at: number;
 }
 
+export interface ReadLaterItem {
+  id: number;
+  item_id: number | null;
+  link: string;
+  title: string;
+  content: string;
+  pub_date: number;
+  feed_name: string;
+  created_at: number;
+}
+
 // API response wrappers
 export interface APIResponse<T> {
   data?: T;
@@ -114,6 +125,15 @@ export interface ValidateFeedResponse {
 }
 
 export interface CreateBookmarkRequest {
+  item_id?: number;
+  link: string;
+  title: string;
+  content: string;
+  pub_date: number;
+  feed_name: string;
+}
+
+export interface CreateReadLaterItemRequest {
   item_id?: number;
   link: string;
   title: string;

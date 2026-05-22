@@ -1,4 +1,4 @@
-export const articleFilters = ["all", "unread", "starred"] as const;
+export const articleFilters = ["all", "unread", "starred", "read-later"] as const;
 
 export type ArticleFilter = (typeof articleFilters)[number];
 

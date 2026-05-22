@@ -1,10 +1,11 @@
 import { useLocation } from "@tanstack/react-router";
-import { Inbox, Layers, Star } from "lucide-react";
+import { Clock, Inbox, Layers, Star } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { isArticleFilter } from "@/lib/article-filter";
 import { useGroups } from "@/queries/groups";
 import { useFeedLookup, useUnreadCounts } from "@/queries/feeds";
 import { useBookmarkLookup } from "@/queries/bookmarks";
+import { useReadLaterLookup } from "@/queries/read-later";
 import { useUrlState } from "@/hooks/use-url-state";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ export function FeedList() {
   const { feeds, getFeedsByGroup } = useFeedLookup();
   const { getTotalUnreadCount, getTotalItemCount } = useUnreadCounts();
   const { bookmarks } = useBookmarkLookup();
+  const { readLaterItems } = useReadLaterLookup();
   const {
     selectedFeedId,
     selectedGroupId,
@@ -32,9 +34,10 @@ export function FeedList() {
   const totalUnread = getTotalUnreadCount();
   const totalItems = getTotalItemCount();
   const starredCount = bookmarks.length;
+  const readLaterCount = readLaterItems.length;
 
   const topFilters: Array<{
-    value: "all" | "unread" | "starred";
+    value: "all" | "unread" | "starred" | "read-later";
     label: string;
     count: number;
     icon: typeof Inbox;
@@ -50,6 +53,12 @@ export function FeedList() {
       label: t("article.filter.starred"),
       count: starredCount,
       icon: Star,
+    },
+    {
+      value: "read-later",
+      label: t("article.filter.readLater"),
+      count: readLaterCount,
+      icon: Clock,
     },
     {
       value: "all",
@@ -110,6 +119,7 @@ export function FeedList() {
                 groupId={group.id}
                 name={group.name}
                 feeds={groupFeeds}
+                showTotalCount={articleFilter === "all"}
               />
             );
           })}

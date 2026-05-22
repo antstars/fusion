@@ -161,6 +161,11 @@ func (h *Handler) SetupRouter() *gin.Engine {
 			auth.POST("/bookmarks", h.createBookmark)
 			auth.GET("/bookmarks/:id", h.getBookmark)
 			auth.DELETE("/bookmarks/:id", h.deleteBookmark)
+
+			auth.GET("/read-later", h.listReadLaterItems)
+			auth.POST("/read-later", h.createReadLaterItem)
+			auth.GET("/read-later/:id", h.getReadLaterItem)
+			auth.DELETE("/read-later/:id", h.deleteReadLaterItem)
 		}
 	}
 
@@ -213,7 +218,7 @@ func (h *Handler) cacheMiddleware() gin.HandlerFunc {
 }
 
 func (h *Handler) isCacheablePath(path string) bool {
-	for _, prefix := range []string{"/api/groups", "/api/feeds", "/api/items", "/api/bookmarks", "/api/search"} {
+	for _, prefix := range []string{"/api/groups", "/api/feeds", "/api/items", "/api/bookmarks", "/api/read-later", "/api/search"} {
 		if path == prefix || strings.HasPrefix(path, prefix+"/") {
 			return true
 		}

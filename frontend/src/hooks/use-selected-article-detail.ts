@@ -5,6 +5,12 @@ import {
   useDeleteBookmark,
   useStarredItems,
 } from "@/queries/bookmarks";
+import {
+  useCreateReadLaterItem,
+  useDeleteReadLaterItem,
+  useReadLaterArticles,
+  useReadLaterLookup,
+} from "@/queries/read-later";
 import { useFeedLookup } from "@/queries/feeds";
 import {
   useItem,
@@ -29,6 +35,8 @@ export function useSelectedArticleDetail() {
   } = useUrlState();
   const { getFeedById } = useFeedLookup();
   const isStarredMode = articleFilter === "starred";
+  const isReadLaterMode = articleFilter === "read-later";
+  const isSavedMode = isStarredMode || isReadLaterMode;
   const articlePageSize = usePreferencesStore((state) => state.articlePageSize);
 
   const itemsQuery = useItems({
@@ -45,7 +53,15 @@ export function useSelectedArticleDetail() {
     feedId: selectedFeedId,
     groupId: selectedGroupId,
   });
-  const sourceArticles = isStarredMode ? starredArticles : articles;
+  const readLaterArticles = useReadLaterArticles({
+    feedId: selectedFeedId,
+    groupId: selectedGroupId,
+  });
+  const sourceArticles = isStarredMode
+    ? starredArticles
+    : isReadLaterMode
+      ? readLaterArticles
+      : articles;
   const listArticles = useMemo(() => {
     if (articleFilter !== "unread") return sourceArticles;
 
@@ -58,8 +74,11 @@ export function useSelectedArticleDetail() {
   const markUnread = useMarkItemsUnread();
   const autoReadItemIdsRef = useRef(new Set<number>());
   const { isItemStarred, getBookmarkByItemId } = useBookmarkLookup();
+  const { isItemReadLater, getReadLaterByItemId } = useReadLaterLookup();
   const createBookmark = useCreateBookmark();
   const deleteBookmark = useDeleteBookmark();
+  const createReadLaterItem = useCreateReadLaterItem();
+  const deleteReadLaterItem = useDeleteReadLaterItem();
 
   const articleIds = listArticles.map((article) => article.id);
   const unreadListCount = listArticles.filter((item) => item.unread).length;
@@ -71,7 +90,7 @@ export function useSelectedArticleDetail() {
   const shouldFetchArticle =
     selectedArticleId !== null &&
     selectedArticleId > 0 &&
-    (isStarredMode || storeArticle === null);
+    (isSavedMode || storeArticle === null);
   const { data: fetchedArticle } = useItem(
     selectedArticleId,
     shouldFetchArticle,
@@ -80,14 +99,18 @@ export function useSelectedArticleDetail() {
   const article: Item | null =
     (isStarredMode
       ? (fetchedArticle ?? storeArticle)
+      : isReadLaterMode
+        ? (fetchedArticle ?? storeArticle)
       : (storeArticle ?? fetchedArticle)) ?? null;
   const canToggleRead =
     article !== null &&
     article.id > 0 &&
-    (!isStarredMode || fetchedArticle !== undefined);
+    (!isSavedMode || fetchedArticle !== undefined);
   const feed = article ? getFeedById(article.feed_id) : null;
   const bookmark = article ? getBookmarkByItemId(article.id) : null;
   const starred = article ? isItemStarred(article.id) : false;
+  const readLaterItem = article ? getReadLaterByItemId(article.id) : null;
+  const readLater = article ? isItemReadLater(article.id) : false;
   const safeArticleLink = article ? toSafeExternalUrl(article.link) : null;
 
   const handleToggleRead = async () => {
@@ -119,6 +142,22 @@ export function useSelectedArticleDetail() {
     }
   };
 
+  const handleToggleReadLater = async () => {
+    if (!article) return;
+    try {
+      if (readLater) {
+        const item = getReadLaterByItemId(article.id);
+        if (item) {
+          await deleteReadLaterItem.mutateAsync(item.id);
+        }
+      } else {
+        await createReadLaterItem.mutateAsync(article);
+      }
+    } catch (error) {
+      console.error("Failed to toggle read later:", error);
+    }
+  };
+
   const handleOpenOriginal = () => {
     if (!safeArticleLink) return;
     window.open(safeArticleLink, "_blank", "noopener,noreferrer");
@@ -130,7 +169,7 @@ export function useSelectedArticleDetail() {
   };
 
   useEffect(() => {
-    if (articleFilter !== "unread" || isStarredMode) return;
+    if (articleFilter !== "unread" || isSavedMode) return;
     if (!itemsQuery.hasNextPage || itemsQuery.isFetchingNextPage) return;
     if (unreadListCount >= articlePageSize) return;
     if (itemsQuery.data && unreadListCount === 0) {
@@ -143,7 +182,7 @@ export function useSelectedArticleDetail() {
     articleFilter,
     articlePageSize,
     fetchNextPage,
-    isStarredMode,
+    isSavedMode,
     itemsQuery.data,
     itemsQuery.hasNextPage,
     itemsQuery.isFetchingNextPage,
@@ -183,9 +222,12 @@ export function useSelectedArticleDetail() {
     handleOpenFeed,
     handleOpenOriginal,
     handleToggleRead,
+    handleToggleReadLater,
     handleToggleStar,
     hasNext,
     hasPrevious,
+    readLater,
+    readLaterItem,
     safeArticleLink,
     selectedArticleId,
     setSelectedArticle,

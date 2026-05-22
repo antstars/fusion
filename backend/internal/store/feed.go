@@ -301,8 +301,7 @@ func (s *Store) UpdateFeed(id int64, params UpdateFeedParams) error {
 }
 
 // DeleteFeed removes a feed and all its items in a transaction.
-// Bookmarks are preserved by setting their item_id to NULL, maintaining
-// the snapshot of content even after original items are deleted.
+// Saved snapshots are preserved by setting their item_id to NULL.
 func (s *Store) DeleteFeed(id int64) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -312,6 +311,13 @@ func (s *Store) DeleteFeed(id int64) error {
 
 	if _, err := s.execWith(tx, `
 		UPDATE bookmarks SET item_id = NULL
+		WHERE item_id IN (SELECT id FROM items WHERE feed_id = :feed_id)
+	`, sql.Named("feed_id", id)); err != nil {
+		return err
+	}
+
+	if _, err := s.execWith(tx, `
+		UPDATE read_later_items SET item_id = NULL
 		WHERE item_id IN (SELECT id FROM items WHERE feed_id = :feed_id)
 	`, sql.Named("feed_id", id)); err != nil {
 		return err

@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Clock,
   Star,
   X,
 } from "lucide-react";
@@ -44,9 +45,11 @@ export function ArticleDetailContent({
     handleOpenFeed,
     handleOpenOriginal,
     handleToggleRead,
+    handleToggleReadLater,
     handleToggleStar,
     hasNext,
     hasPrevious,
+    readLater,
     safeArticleLink,
     selectedArticleId,
     setSelectedArticle,
@@ -106,6 +109,19 @@ export function ArticleDetailContent({
               className={`h-4 w-4 ${starred ? "fill-current text-amber-500" : ""}`}
             />
             {starred ? t("article.action.unstar") : t("article.action.star")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToggleReadLater}
+            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+          >
+            <Clock
+              className={`h-4 w-4 ${readLater ? "fill-current text-primary" : ""}`}
+            />
+            {readLater
+              ? t("article.action.removeReadLater")
+              : t("article.action.readLater")}
           </Button>
           <Button
             asChild={Boolean(safeArticleLink)}

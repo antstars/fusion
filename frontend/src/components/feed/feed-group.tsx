@@ -10,9 +10,15 @@ interface FeedGroupProps {
   groupId: number;
   name: string;
   feeds: Feed[];
+  showTotalCount?: boolean;
 }
 
-export function FeedGroup({ groupId, name, feeds }: FeedGroupProps) {
+export function FeedGroup({
+  groupId,
+  name,
+  feeds,
+  showTotalCount = false,
+}: FeedGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
   const { selectedGroupId, setSelectedGroup } = useUrlState();
   const isSelected = selectedGroupId === groupId;
@@ -21,6 +27,9 @@ export function FeedGroup({ groupId, name, feeds }: FeedGroupProps) {
     (sum, feed) => sum + (feed.unread_count || 0),
     0,
   );
+  const totalCount = feeds.reduce((sum, feed) => sum + (feed.item_count || 0), 0);
+  const displayCount =
+    unreadCount > 0 ? unreadCount : showTotalCount || isSelected ? totalCount : 0;
 
   return (
     <Collapsible
@@ -55,8 +64,15 @@ export function FeedGroup({ groupId, name, feeds }: FeedGroupProps) {
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
         >
           <span className="block min-w-0 flex-1 truncate">{name}</span>
-          {unreadCount > 0 && (
-            <span className="sidebar-count shrink-0">{unreadCount}</span>
+          {displayCount > 0 && (
+            <span
+              className={cn(
+                "sidebar-count shrink-0",
+                unreadCount === 0 && "text-muted-foreground/70",
+              )}
+            >
+              {displayCount}
+            </span>
           )}
         </button>
       </div>

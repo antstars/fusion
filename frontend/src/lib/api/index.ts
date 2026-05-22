@@ -7,6 +7,7 @@ import type {
   Feed,
   Item,
   Bookmark,
+  ReadLaterItem,
   CreateGroupRequest,
   UpdateGroupRequest,
   CreateFeedRequest,
@@ -14,6 +15,7 @@ import type {
   ValidateFeedRequest,
   ValidateFeedResponse,
   CreateBookmarkRequest,
+  CreateReadLaterItemRequest,
   MarkItemsReadRequest,
   ListItemsParams,
   BatchCreateFeedsRequest,
@@ -121,6 +123,25 @@ export const bookmarkAPI = {
     api.post<APIResponse<Bookmark>>("/bookmarks", data),
 
   delete: (id: number) => api.delete<void>(`/bookmarks/${id}`),
+};
+
+// Read Later APIs
+export const readLaterAPI = {
+  list: (limit = 50, offset = 0) => {
+    const query = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+    return api.get<ListAPIResponse<ReadLaterItem>>(`/read-later?${query}`);
+  },
+
+  get: (id: number) =>
+    api.get<APIResponse<ReadLaterItem>>(`/read-later/${id}`),
+
+  create: (data: CreateReadLaterItemRequest) =>
+    api.post<APIResponse<ReadLaterItem>>("/read-later", data),
+
+  delete: (id: number) => api.delete<void>(`/read-later/${id}`),
 };
 
 // Search APIs
