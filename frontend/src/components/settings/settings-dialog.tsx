@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Bug, Download, Github, Info, Keyboard, Palette } from "lucide-react";
+import { Bug, Database, Download, Github, Info, Keyboard, Palette } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,8 +21,14 @@ import {
 import { usePWAInstall } from "@/hooks/use-pwa-install";
 import { localeLabels, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import {
+  useRetentionSettings,
+  useUpdateRetentionSettings,
+} from "@/queries/settings";
 
-type SettingsTab = "appearance" | "about";
+type SettingsTab = "appearance" | "data" | "about";
+
+const retentionDayOptions = [30, 90, 365, 0] as const;
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -44,6 +51,107 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
       {icon}
       <span className="whitespace-nowrap">{label}</span>
     </button>
+  );
+}
+
+function DataContent() {
+  const { t } = useI18n();
+  const { data: settings, isLoading } = useRetentionSettings();
+  const updateRetention = useUpdateRetentionSettings();
+  const [maxArticles, setMaxArticles] = useState("0");
+  const [retentionDays, setRetentionDays] = useState("30");
+
+  useEffect(() => {
+    if (!settings) return;
+    setMaxArticles(settings.max_articles.toString());
+    setRetentionDays(settings.retention_days.toString());
+  }, [settings]);
+
+  const parsedMaxArticles = Number.parseInt(maxArticles, 10);
+  const canSave =
+    !isLoading &&
+    !updateRetention.isPending &&
+    /^\d+$/.test(maxArticles) &&
+    Number.isInteger(parsedMaxArticles) &&
+    parsedMaxArticles >= 0;
+
+  const handleSave = async () => {
+    if (!canSave) return;
+
+    try {
+      const updated = await updateRetention.mutateAsync({
+        max_articles: parsedMaxArticles,
+        retention_days: Number.parseInt(retentionDays, 10),
+      });
+      toast.success(
+        updated?.deleted && updated.deleted > 0
+          ? t("settings.retention.savedWithDeleted", {
+              count: updated.deleted,
+            })
+          : t("settings.retention.saved"),
+      );
+    } catch {
+      toast.error(t("settings.retention.saveFailed"));
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">
+            {t("settings.retention.maxArticles.label")}
+          </p>
+          <p className="text-[13px] text-muted-foreground">
+            {t("settings.retention.maxArticles.description")}
+          </p>
+        </div>
+        <Input
+          type="number"
+          min={0}
+          step={1}
+          value={maxArticles}
+          onChange={(event) => setMaxArticles(event.target.value)}
+          disabled={isLoading}
+          className="w-28"
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">
+            {t("settings.retention.days.label")}
+          </p>
+          <p className="text-[13px] text-muted-foreground">
+            {t("settings.retention.days.description")}
+          </p>
+        </div>
+        <Select
+          value={retentionDays}
+          onValueChange={setRetentionDays}
+          disabled={isLoading}
+        >
+          <SelectTrigger className="w-auto gap-2 border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {retentionDayOptions.map((days) => (
+              <SelectItem key={days} value={days.toString()}>
+                {days === 0
+                  ? t("settings.retention.days.unlimited")
+                  : t("settings.retention.days.option", { days })}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={() => void handleSave()} disabled={!canSave}>
+          {t("settings.retention.save")}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -239,6 +347,7 @@ export function SettingsDialog() {
 
   const tabTitles: Record<SettingsTab, string> = {
     appearance: t("settings.tab.appearance"),
+    data: t("settings.tab.data"),
     about: t("settings.tab.about"),
   };
 
@@ -258,6 +367,12 @@ export function SettingsDialog() {
               onClick={() => setActiveTab("appearance")}
             />
             <NavItem
+              icon={<Database className="h-4 w-4" />}
+              label={t("settings.tab.data")}
+              active={activeTab === "data"}
+              onClick={() => setActiveTab("data")}
+            />
+            <NavItem
               icon={<Info className="h-4 w-4" />}
               label={t("settings.tab.about")}
               active={activeTab === "about"}
@@ -274,6 +389,7 @@ export function SettingsDialog() {
 
           <div className="flex-1 overflow-y-auto">
             {activeTab === "appearance" && <AppearanceContent />}
+            {activeTab === "data" && <DataContent />}
             {activeTab === "about" && <AboutContent />}
           </div>
         </div>

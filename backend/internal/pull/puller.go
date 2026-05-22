@@ -207,6 +207,12 @@ func (p *Puller) pullFeed(ctx context.Context, feed *model.Feed) {
 		}
 	}
 
+	if deleted, err := p.store.CleanupItemsByCurrentRetention(time.Now()); err != nil {
+		p.logger.Warn("article retention cleanup failed", "feed_id", feed.ID, "error", err)
+	} else if deleted > 0 {
+		p.logger.Info("article retention cleanup finished", "deleted", deleted)
+	}
+
 	p.logger.Info("feed pulled successfully", "feed_id", feed.ID, "feed_name", feed.Name, "new_items", newCount)
 }
 

@@ -6,7 +6,7 @@ func TestMigrate(t *testing.T) {
 	store, _ := setupTestDB(t)
 	defer closeStore(t, store)
 
-	tables := []string{"groups", "feeds", "feed_fetch_state", "items", "bookmarks", "schema_migrations"}
+	tables := []string{"groups", "feeds", "feed_fetch_state", "items", "bookmarks", "app_settings", "schema_migrations"}
 	for _, table := range tables {
 		var exists bool
 		err := store.db.QueryRow(`

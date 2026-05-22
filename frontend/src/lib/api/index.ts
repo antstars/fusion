@@ -23,6 +23,8 @@ import type {
   SearchResponse,
   OIDCStatusResponse,
   OIDCLoginResponse,
+  RetentionSettings,
+  UpdateRetentionSettingsRequest,
 } from "./types";
 
 // Session APIs
@@ -150,6 +152,14 @@ export const searchAPI = {
     api.get<APIResponse<SearchResponse>>(
       `/search?q=${encodeURIComponent(q)}&limit=${limit}`,
     ),
+};
+
+export const settingsAPI = {
+  getRetention: () =>
+    api.get<APIResponse<RetentionSettings>>("/settings/retention"),
+
+  updateRetention: (data: UpdateRetentionSettingsRequest) =>
+    api.patch<APIResponse<RetentionSettings>>("/settings/retention", data),
 };
 
 export * from "./types";

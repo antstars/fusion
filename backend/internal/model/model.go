@@ -91,3 +91,9 @@ type ReadLaterItem struct {
 	FeedName  string `json:"feed_name"`
 	CreatedAt int64  `json:"created_at"`
 }
+
+// RetentionSettings controls automatic article cleanup.
+type RetentionSettings struct {
+	MaxArticles   int `json:"max_articles"`
+	RetentionDays int `json:"retention_days"`
+}

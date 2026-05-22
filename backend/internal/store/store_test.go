@@ -35,9 +35,10 @@ func resetTestDB(t *testing.T, store *Store) {
 	t.Helper()
 
 	if _, err := store.db.Exec(`
-		TRUNCATE TABLE read_later_items, bookmarks, items, feed_fetch_state, feeds, groups RESTART IDENTITY CASCADE;
+		TRUNCATE TABLE read_later_items, bookmarks, items, feed_fetch_state, feeds, groups, app_settings RESTART IDENTITY CASCADE;
 		INSERT INTO groups (id, name) VALUES (1, 'Default');
 		SELECT setval(pg_get_serial_sequence('groups', 'id'), 1);
+		INSERT INTO app_settings (key, value) VALUES ('max_articles', '0'), ('retention_days', '30');
 	`); err != nil {
 		_ = store.Close()
 		t.Fatalf("reset test database: %v", err)

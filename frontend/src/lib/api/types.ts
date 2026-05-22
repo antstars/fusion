@@ -203,3 +203,14 @@ export interface OIDCStatusResponse {
 export interface OIDCLoginResponse {
   auth_url: string;
 }
+
+export interface RetentionSettings {
+  max_articles: number;
+  retention_days: number;
+  deleted?: number;
+}
+
+export interface UpdateRetentionSettingsRequest {
+  max_articles: number;
+  retention_days: number;
+}

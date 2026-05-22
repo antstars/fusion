@@ -16,6 +16,7 @@ tags:
   - name: Feeds
   - name: Items
   - name: Search
+  - name: Settings
   - name: Bookmarks
   - name: ReadLater
 security:
@@ -534,6 +535,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /settings/retention:
+    get:
+      tags: [Settings]
+      summary: Get article retention settings
+      responses:
+        "200":
+          description: Retention settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetentionSettingsEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      tags: [Settings]
+      summary: Update article retention settings and run cleanup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRetentionSettingsRequest"
+      responses:
+        "200":
+          description: Updated retention settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetentionSettingsEnvelope"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1191,6 +1230,41 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/SearchData"
+
+    RetentionSettings:
+      type: object
+      required: [max_articles, retention_days]
+      properties:
+        max_articles:
+          type: integer
+          minimum: 0
+          description: Global maximum number of regular articles to keep. 0 means unlimited.
+        retention_days:
+          type: integer
+          enum: [0, 30, 90, 365]
+          description: Maximum article age in days. 0 means unlimited.
+        deleted:
+          type: integer
+          minimum: 0
+          description: Number of articles deleted by the last cleanup.
+
+    RetentionSettingsEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/RetentionSettings"
+
+    UpdateRetentionSettingsRequest:
+      type: object
+      required: [max_articles, retention_days]
+      properties:
+        max_articles:
+          type: integer
+          minimum: 0
+        retention_days:
+          type: integer
+          enum: [0, 30, 90, 365]
 
     Bookmark:
       type: object

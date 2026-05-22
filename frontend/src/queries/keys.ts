@@ -45,4 +45,8 @@ export const queryKeys = {
     all: ["read-later"] as const,
     list: () => [...queryKeys.readLater.all, "list"] as const,
   },
+  settings: {
+    all: ["settings"] as const,
+    retention: () => [...queryKeys.settings.all, "retention"] as const,
+  },
 };

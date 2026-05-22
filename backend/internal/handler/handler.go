@@ -166,6 +166,9 @@ func (h *Handler) SetupRouter() *gin.Engine {
 
 			auth.GET("/search", h.search)
 
+			auth.GET("/settings/retention", h.getRetentionSettings)
+			auth.PATCH("/settings/retention", h.updateRetentionSettings)
+
 			auth.GET("/bookmarks", h.listBookmarks)
 			auth.POST("/bookmarks", h.createBookmark)
 			auth.GET("/bookmarks/:id", h.getBookmark)

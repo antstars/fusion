@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/0x2E/fusion/internal/config"
+	"github.com/0x2E/fusion/internal/model"
 	"github.com/0x2E/fusion/internal/store"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -145,6 +146,56 @@ func TestRefreshAllWaitsForRunningJobs(t *testing.T) {
 	}
 }
 
+func TestRefreshFeedRunsRetentionCleanup(t *testing.T) {
+	st, err := newTestStore(t)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	defer st.Close()
+
+	if _, err := st.UpdateRetentionSettings(model.RetentionSettings{MaxArticles: 1, RetentionDays: 0}); err != nil {
+		t.Fatalf("update retention settings: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Demo</title><link>https://example.com</link>
+<item><guid>g1</guid><title>Old</title><link>https://example.com/old</link><pubDate>Mon, 02 Jan 2006 15:04:05 GMT</pubDate></item>
+<item><guid>g2</guid><title>New</title><link>https://example.com/new</link><pubDate>Tue, 03 Jan 2006 15:04:05 GMT</pubDate></item>
+</channel></rss>`)
+	}))
+	defer server.Close()
+
+	feed, err := st.CreateFeed(1, "Feed A", server.URL, "", "")
+	if err != nil {
+		t.Fatalf("create feed: %v", err)
+	}
+
+	p := New(st, &config.Config{
+		PullInterval:      1800,
+		PullTimeout:       5,
+		PullConcurrency:   1,
+		PullMaxBackoff:    604800,
+		AllowPrivateFeeds: true,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := p.RefreshFeed(ctx, feed.ID); err != nil {
+		t.Fatalf("refresh feed: %v", err)
+	}
+
+	total, err := st.CountItems(store.ListItemsParams{})
+	if err != nil {
+		t.Fatalf("count items: %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("total items = %d, want 1", total)
+	}
+}
+
 func newTestStore(t *testing.T) (*store.Store, error) {
 	t.Helper()
 
@@ -170,9 +221,10 @@ func resetTestDB(t *testing.T, databaseURL string) {
 	defer db.Close()
 
 	if _, err := db.Exec(`
-		TRUNCATE TABLE bookmarks, items, feed_fetch_state, feeds, groups RESTART IDENTITY CASCADE;
+		TRUNCATE TABLE read_later_items, bookmarks, items, feed_fetch_state, feeds, groups, app_settings RESTART IDENTITY CASCADE;
 		INSERT INTO groups (id, name) VALUES (1, 'Default');
 		SELECT setval(pg_get_serial_sequence('groups', 'id'), 1);
+		INSERT INTO app_settings (key, value) VALUES ('max_articles', '0'), ('retention_days', '30');
 	`); err != nil {
 		t.Fatalf("reset postgres test database: %v", err)
 	}

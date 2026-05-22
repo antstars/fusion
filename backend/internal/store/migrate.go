@@ -98,7 +98,16 @@ CREATE TABLE IF NOT EXISTS feed_fetch_state (
 );
 CREATE INDEX IF NOT EXISTS idx_feed_fetch_state_next_check_at ON feed_fetch_state(next_check_at);
 
-INSERT INTO schema_migrations (version) VALUES (1), (2), (3)
+CREATE TABLE IF NOT EXISTS app_settings (
+	key TEXT PRIMARY KEY,
+	value TEXT NOT NULL,
+	updated_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+);
+INSERT INTO app_settings (key, value)
+VALUES ('max_articles', '0'), ('retention_days', '30')
+ON CONFLICT (key) DO NOTHING;
+
+INSERT INTO schema_migrations (version) VALUES (1), (2), (3), (4)
 ON CONFLICT (version) DO NOTHING;
 `
 
