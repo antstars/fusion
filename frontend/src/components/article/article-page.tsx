@@ -11,8 +11,8 @@ export function ArticlePage() {
       {isMobile ? (
         <ArticleList />
       ) : (
-        <div className="flex h-full min-w-0 gap-3 p-3">
-          <div className="app-panel h-full w-[420px] flex-none overflow-hidden rounded-lg border">
+        <div className="flex h-full min-w-0 gap-0 p-0">
+          <div className="app-panel h-full w-[420px] flex-none overflow-hidden border-r">
             <ArticleList compact />
           </div>
           <ArticleDetailPane />

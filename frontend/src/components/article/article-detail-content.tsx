@@ -83,66 +83,66 @@ export function ArticleDetailContent({
       <div className="glass-panel-strong shrink-0 border-b">
         <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-3 px-5 sm:px-8">
           <div className="flex min-w-0 items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggleRead}
-            disabled={!canToggleRead}
-            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
-          >
-            {article.unread ? (
-              <Circle className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <CircleCheck className="h-4 w-4 text-primary" />
-            )}
-            {article.unread
-              ? t("article.action.markRead")
-              : t("article.action.markUnread")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggleStar}
-            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
-          >
-            <Star
-              className={`h-4 w-4 ${starred ? "fill-current text-amber-500" : ""}`}
-            />
-            {starred ? t("article.action.unstar") : t("article.action.star")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggleReadLater}
-            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
-          >
-            <Clock
-              className={`h-4 w-4 ${readLater ? "fill-current text-primary" : ""}`}
-            />
-            {readLater
-              ? t("article.action.removeReadLater")
-              : t("article.action.readLater")}
-          </Button>
-          <Button
-            asChild={Boolean(safeArticleLink)}
-            variant="outline"
-            size="sm"
-            onClick={safeArticleLink ? undefined : handleOpenOriginal}
-            disabled={!safeArticleLink}
-            className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
-          >
-            {safeArticleLink ? (
-              <a href={safeArticleLink} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4" />
-                {t("article.action.original")}
-              </a>
-            ) : (
-              <>
-                <ExternalLink className="h-4 w-4" />
-                {t("article.action.original")}
-              </>
-            )}
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleRead}
+              disabled={!canToggleRead}
+              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+            >
+              {article.unread ? (
+                <Circle className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <CircleCheck className="h-4 w-4 text-primary" />
+              )}
+              {article.unread
+                ? t("article.action.markRead")
+                : t("article.action.markUnread")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleStar}
+              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+            >
+              <Star
+                className={`h-4 w-4 ${starred ? "fill-current text-amber-500" : ""}`}
+              />
+              {starred ? t("article.action.unstar") : t("article.action.star")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleReadLater}
+              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+            >
+              <Clock
+                className={`h-4 w-4 ${readLater ? "fill-current text-primary" : ""}`}
+              />
+              {readLater
+                ? t("article.action.removeReadLater")
+                : t("article.action.readLater")}
+            </Button>
+            <Button
+              asChild={Boolean(safeArticleLink)}
+              variant="outline"
+              size="sm"
+              onClick={safeArticleLink ? undefined : handleOpenOriginal}
+              disabled={!safeArticleLink}
+              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+            >
+              {safeArticleLink ? (
+                <a href={safeArticleLink} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  {t("article.action.original")}
+                </a>
+              ) : (
+                <>
+                  <ExternalLink className="h-4 w-4" />
+                  {t("article.action.original")}
+                </>
+              )}
+            </Button>
           </div>
 
           {showCloseButton && (
