@@ -32,16 +32,29 @@ function ArticleItemComponent({
         }
       }}
       className={cn(
-        "article-row group relative flex w-full cursor-pointer items-start gap-4 rounded-md border px-4 py-4 text-left transition-colors",
-        compact && "px-3 py-3",
+        "article-row group relative flex w-full cursor-pointer items-start gap-2.5 rounded-md border px-3 py-3 text-left transition-colors",
+        compact && "px-2.5 py-2.5",
       )}
       data-selected={isSelected}
     >
+      <span
+        className={cn(
+          "mt-[1.15rem] size-1.5 shrink-0 rounded-full",
+          article.unread ? "bg-primary" : "bg-transparent",
+        )}
+        aria-hidden="true"
+      />
       {/* Article Content */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex items-center gap-1.5 text-[11px] leading-none text-muted-foreground">
+          <FeedFavicon src={feedFaviconUrl} className="h-4 w-4 rounded-sm" />
+          <span className="min-w-0 truncate font-semibold">{feedName}</span>
+          <span className="text-muted-foreground/60">·</span>
+          <span className="shrink-0">{formatDate(article.pub_date)}</span>
+        </div>
         <h3
           className={cn(
-            "line-clamp-2 text-[15px] leading-snug",
+            "line-clamp-2 text-[14px] leading-snug",
             article.unread
               ? "font-semibold text-foreground"
               : "font-medium text-muted-foreground",
@@ -51,22 +64,12 @@ function ArticleItemComponent({
         </h3>
         <p
           className={cn(
-            "line-clamp-2 text-sm leading-relaxed text-muted-foreground",
-            compact && "line-clamp-1 text-xs",
+            "line-clamp-2 text-[13px] leading-relaxed text-muted-foreground/85",
+            compact && "line-clamp-2",
           )}
         >
           {extractSummary(article.content, 150)}
         </p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <FeedFavicon src={feedFaviconUrl} className="h-3.5 w-3.5 rounded-sm" />
-          <span className="truncate font-medium">
-            {feedName}
-          </span>
-          <span>-</span>
-          <span className="shrink-0">
-            {formatDate(article.pub_date)}
-          </span>
-        </div>
       </div>
     </div>
   );

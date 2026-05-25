@@ -80,67 +80,80 @@ export function ArticleDetailContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="glass-panel-strong shrink-0 border-b">
-        <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-3 px-5 sm:px-8">
+      <div className="shrink-0 border-b border-border bg-reader">
+        <div className="mx-auto flex h-12 w-full max-w-4xl items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex min-w-0 items-center gap-2">
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
               onClick={handleToggleRead}
               disabled={!canToggleRead}
-              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={
+                article.unread
+                  ? t("article.action.markRead")
+                  : t("article.action.markUnread")
+              }
+              title={
+                article.unread
+                  ? t("article.action.markRead")
+                  : t("article.action.markUnread")
+              }
             >
               {article.unread ? (
                 <Circle className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <CircleCheck className="h-4 w-4 text-primary" />
               )}
-              {article.unread
-                ? t("article.action.markRead")
-                : t("article.action.markUnread")}
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
               onClick={handleToggleStar}
-              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={starred ? t("article.action.unstar") : t("article.action.star")}
+              title={starred ? t("article.action.unstar") : t("article.action.star")}
             >
               <Star
                 className={`h-4 w-4 ${starred ? "fill-current text-amber-500" : ""}`}
               />
-              {starred ? t("article.action.unstar") : t("article.action.star")}
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
               onClick={handleToggleReadLater}
-              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={
+                readLater
+                  ? t("article.action.removeReadLater")
+                  : t("article.action.readLater")
+              }
+              title={
+                readLater
+                  ? t("article.action.removeReadLater")
+                  : t("article.action.readLater")
+              }
             >
               <Clock
                 className={`h-4 w-4 ${readLater ? "fill-current text-primary" : ""}`}
               />
-              {readLater
-                ? t("article.action.removeReadLater")
-                : t("article.action.readLater")}
             </Button>
             <Button
               asChild={Boolean(safeArticleLink)}
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
               onClick={safeArticleLink ? undefined : handleOpenOriginal}
               disabled={!safeArticleLink}
-              className="glass-control h-auto gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={t("article.action.original")}
+              title={t("article.action.original")}
             >
               {safeArticleLink ? (
                 <a href={safeArticleLink} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
-                  {t("article.action.original")}
                 </a>
               ) : (
-                <>
-                  <ExternalLink className="h-4 w-4" />
-                  {t("article.action.original")}
-                </>
+                <ExternalLink className="h-4 w-4" />
               )}
             </Button>
           </div>
@@ -162,17 +175,17 @@ export function ArticleDetailContent({
         className="mobile-smooth-scroll min-h-0 flex-1"
         viewportRef={scrollViewportRef}
       >
-        <article className="mx-auto min-w-0 max-w-4xl px-5 py-8 sm:px-8 sm:py-10">
-          <div className="space-y-3">
-            <h1 className="text-[28px] leading-[1.3] font-bold">
+        <article className="mx-auto min-w-0 max-w-3xl px-5 py-9 sm:px-8 sm:py-12">
+          <div className="space-y-4">
+            <h1 className="text-[30px] leading-[1.25] font-bold tracking-normal sm:text-[34px]">
               {article.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
               {article.feed_id > 0 ? (
                 <button
                   type="button"
                   onClick={handleOpenFeed}
-                  className="glass-control flex max-w-48 items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
+                  className="flex max-w-48 items-center gap-1.5 rounded-md px-0 py-1 text-xs font-semibold text-primary transition-colors hover:underline"
                 >
                   {feed && (
                     <FeedFavicon
@@ -185,7 +198,7 @@ export function ArticleDetailContent({
                   </span>
                 </button>
               ) : (
-                <span className="glass-control flex max-w-48 items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium text-muted-foreground">
+                <span className="flex max-w-48 items-center gap-1.5 rounded-md py-1 text-xs font-semibold text-muted-foreground">
                   <span className="truncate">
                     {bookmark?.feed_name ?? t("common.unknown")}
                   </span>
@@ -208,7 +221,7 @@ export function ArticleDetailContent({
           </div>
 
           <div
-            className="prose prose-neutral mt-6 min-w-0 max-w-none break-words dark:prose-invert"
+            className="prose prose-neutral mt-8 min-w-0 max-w-none break-words dark:prose-invert"
             dangerouslySetInnerHTML={{
               __html: articleHtml,
             }}
@@ -216,24 +229,24 @@ export function ArticleDetailContent({
         </article>
       </ScrollArea>
 
-      <div className="glass-panel-strong shrink-0 border-t">
-        <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between px-5 sm:px-8">
+      <div className="shrink-0 border-t border-border bg-reader">
+        <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-5 sm:px-8">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={goToPrevious}
             disabled={!hasPrevious()}
-            className="glass-control h-auto gap-1.5 px-3 py-2 text-[13px] font-medium text-muted-foreground"
+            className="h-8 gap-1.5 px-2 text-[13px] font-medium text-muted-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
             {t("common.previous")}
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={goToNext}
             disabled={!hasNext()}
-            className="glass-control h-auto gap-1.5 px-3 py-2 text-[13px] font-medium text-muted-foreground"
+            className="h-8 gap-1.5 px-2 text-[13px] font-medium text-muted-foreground"
           >
             {t("common.next")}
             <ChevronRight className="h-4 w-4" />

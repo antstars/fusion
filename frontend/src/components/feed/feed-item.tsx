@@ -29,7 +29,7 @@ export function FeedItem({ feed }: FeedItemProps) {
   return (
     <div
       className={cn(
-        "sidebar-row group flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm transition-colors",
+        "sidebar-row group flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-[13px] transition-colors",
       )}
       data-selected={isSelected}
     >
@@ -38,7 +38,7 @@ export function FeedItem({ feed }: FeedItemProps) {
         onClick={() => setSelectedFeed(feed.id)}
         className="flex min-w-0 flex-1 items-center gap-2 text-left"
       >
-        <FeedFavicon src={faviconUrl} className="h-4 w-4" />
+        <FeedFavicon src={faviconUrl} className="h-4 w-4 rounded-sm" />
         <span className="block min-w-0 max-w-full flex-1 truncate">
           {feed.name}
         </span>

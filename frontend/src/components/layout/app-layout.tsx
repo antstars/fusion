@@ -87,7 +87,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [location.pathname, location.searchStr, setSidebarOpen]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-transparent">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Desktop sidebar */}
       {!isMobile && <Sidebar />}
 
@@ -96,7 +96,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <Sheet open={isSidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="w-[260px] transform-gpu bg-background p-0 duration-200"
+            className="w-[252px] transform-gpu bg-sidebar p-0 duration-200"
             showCloseButton={false}
           >
             <SheetTitle className="sr-only">{t("common.navigation")}</SheetTitle>
@@ -106,7 +106,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       )}
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden bg-transparent">{children}</main>
+      <main className="flex-1 overflow-hidden bg-background">{children}</main>
 
       {/* Modals and drawers */}
       <Suspense fallback={null}>

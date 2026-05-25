@@ -82,7 +82,7 @@ export function FeedList() {
 
   return (
     <ScrollArea className="min-h-0 flex-1 w-full min-w-0 overflow-hidden [&_[data-slot=scroll-area-viewport]>div]:!block">
-      <div className="w-full min-w-0 space-y-1 p-2">
+      <div className="w-full min-w-0 space-y-1 px-2 pb-2">
         {/* Top-level filters */}
         <div className="space-y-0.5">
           {topFilters.map(({ value, label, count, icon: Icon }) => (
@@ -90,7 +90,7 @@ export function FeedList() {
               key={value}
               onClick={() => selectTopLevelFilter(value)}
               className={cn(
-                "sidebar-row flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm transition-colors",
+                "sidebar-row flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-[13px] transition-colors",
               )}
               data-selected={isTopLevelSelected && articleFilter === value}
             >
@@ -103,7 +103,7 @@ export function FeedList() {
 
         {/* Feeds header */}
         <div className="mt-3 flex items-center justify-between px-2 py-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
             {t("search.group.feeds")}
           </span>
         </div>

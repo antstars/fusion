@@ -9,7 +9,7 @@ export function ArticleDetailPane() {
 
   if (selectedArticleId === null) {
     return (
-      <section className="app-panel flex h-full flex-1 items-center justify-center overflow-hidden border-l-0 text-muted-foreground">
+      <section className="flex h-full flex-1 items-center justify-center overflow-hidden bg-reader text-muted-foreground">
         <div className="flex flex-col items-center gap-3 text-center">
           <FileText className="h-10 w-10 opacity-50" />
           <p className="text-sm">{t("article.detail.selectArticle")}</p>
@@ -19,7 +19,7 @@ export function ArticleDetailPane() {
   }
 
   return (
-    <section className="app-panel h-full flex-1 overflow-hidden border-l-0">
+    <section className="h-full flex-1 overflow-hidden bg-reader">
       <ArticleDetailContent />
     </section>
   );

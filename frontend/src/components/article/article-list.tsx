@@ -225,25 +225,28 @@ export function ArticleList({ compact = false }: ArticleListProps) {
       <ContentHeader className={compact ? "px-4 sm:px-4" : undefined}>
         <div className="flex min-w-0 items-center gap-1">
           <SidebarTrigger />
-          <h2 className="truncate text-lg font-semibold">{title}</h2>
+          <h2 className="truncate text-[17px] font-semibold tracking-normal">
+            {title}
+          </h2>
         </div>
         <Button
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon-sm"
           onClick={handleMarkAllAsRead}
           disabled={unreadCount === 0}
-          className={cn("gap-1.5 text-xs", compact && "px-2")}
+          className="text-muted-foreground hover:text-foreground"
+          aria-label={t("article.list.markAllRead")}
+          title={t("article.list.markAllRead")}
         >
           <CheckCheck className="h-4 w-4" />
-          {!compact && t("article.list.markAllRead")}
         </Button>
       </ContentHeader>
 
       {/* Article area with filter tabs */}
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-4 sm:px-6",
-          compact && "px-3 sm:px-3",
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden bg-list-panel px-3 py-3 sm:px-4",
+          compact && "px-2.5 py-2.5 sm:px-2.5",
         )}
       >
         {/* Filter tabs - hidden when no articles exist */}
@@ -252,7 +255,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
             value={articleFilter}
             onValueChange={(v) => setArticleFilter(v as ArticleFilter)}
           >
-            <TabsList className="border bg-muted/70">
+            <TabsList className="h-8 border border-border bg-muted/60 p-0.5">
               <TabsTrigger value="all">{t("article.filter.all")}</TabsTrigger>
               <TabsTrigger value="unread">{t("article.filter.unread")}</TabsTrigger>
               <TabsTrigger value="starred">
@@ -267,13 +270,13 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
         {/* Article list */}
         <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-1 pr-1">
+          <div className="space-y-0.5 pr-1">
             {isLoading && articles.length === 0 ? (
               <div className="space-y-2 p-2">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="h-24 animate-pulse rounded-md bg-muted/60"
+                    className="h-20 animate-pulse rounded-md bg-muted/60"
                   />
                 ))}
               </div>

@@ -39,7 +39,7 @@ export function FeedGroup({
     >
       <div
         className={cn(
-          "sidebar-row flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-sm transition-colors",
+          "sidebar-row flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-[13px] transition-colors",
         )}
         data-selected={isSelected}
       >
@@ -49,7 +49,7 @@ export function FeedGroup({
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="shrink-0 p-1 -m-1 rounded-md transition-colors hover:bg-foreground/10"
+          className="-m-1 shrink-0 rounded-md p-1 transition-colors hover:bg-foreground/10"
         >
           <ChevronRight
             className={cn(

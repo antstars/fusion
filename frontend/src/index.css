@@ -13,8 +13,8 @@
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.55 0.18 250);
-  --primary-foreground: oklch(0.98 0.01 250);
+  --primary: oklch(0.64 0.19 38);
+  --primary-foreground: oklch(0.99 0.01 80);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
@@ -31,30 +31,28 @@
   --chart-4: oklch(0.48 0.16 250);
   --chart-5: oklch(0.42 0.14 250);
   --radius: 0.45rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: #5f5e5b;
-  --sidebar-primary: oklch(0.5 0.16 250);
-  --sidebar-primary-foreground: oklch(0.98 0.01 250);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar: oklch(0.985 0.001 286);
+  --sidebar-foreground: #5f5f62;
+  --sidebar-primary: oklch(0.64 0.19 38);
+  --sidebar-primary-foreground: oklch(0.99 0.01 80);
+  --sidebar-accent: oklch(0.955 0.002 286);
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.55 0.12 250);
-  --glass-bg: oklch(1 0 0 / 72%);
-  --glass-bg-strong: oklch(1 0 0 / 88%);
-  --glass-border: oklch(0.92 0.004 286.32 / 70%);
-  --glass-shadow: 0 16px 40px oklch(0.35 0.04 260 / 8%);
-  --panel-bg: oklch(1 0 0 / 94%);
-  --panel-border: oklch(0.91 0.006 260);
-  --panel-shadow: 0 8px 24px oklch(0.36 0.035 260 / 6%);
-  --row-hover: oklch(0.965 0.006 260);
-  --selected-bg: oklch(0.955 0.035 250);
-  --selected-fg: oklch(0.31 0.11 250);
-  --selected-border: oklch(0.72 0.12 250);
-  --app-background: linear-gradient(
-    180deg,
-    oklch(0.985 0.004 260),
-    oklch(0.965 0.006 260)
-  );
+  --glass-bg: oklch(1 0 0);
+  --glass-bg-strong: oklch(1 0 0);
+  --glass-border: oklch(0.91 0.004 286);
+  --glass-shadow: none;
+  --panel-bg: oklch(1 0 0);
+  --panel-border: oklch(0.91 0.004 286);
+  --panel-shadow: none;
+  --row-hover: oklch(0.958 0.002 286);
+  --selected-bg: oklch(0.955 0.003 286);
+  --selected-fg: oklch(0.18 0.006 286);
+  --selected-border: oklch(0.88 0.006 286);
+  --list-panel: oklch(0.992 0 0);
+  --reader-bg: oklch(1 0 0);
+  --app-background: oklch(1 0 0);
 }
 
 .dark {
@@ -64,8 +62,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.6 0.16 250);
-  --primary-foreground: oklch(0.98 0.01 250);
+  --primary: oklch(0.72 0.17 48);
+  --primary-foreground: oklch(0.16 0.01 40);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
@@ -81,30 +79,28 @@
   --chart-3: oklch(0.6 0.16 250);
   --chart-4: oklch(0.52 0.14 250);
   --chart-5: oklch(0.45 0.12 250);
-  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar: oklch(0.16 0.004 286);
   --sidebar-foreground: #9b9a97;
-  --sidebar-primary: oklch(0.55 0.14 250);
-  --sidebar-primary-foreground: oklch(0.98 0.01 250);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-primary: oklch(0.72 0.17 48);
+  --sidebar-primary-foreground: oklch(0.16 0.01 40);
+  --sidebar-accent: oklch(0.23 0.005 286);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.6 0.12 250);
-  --glass-bg: oklch(0.21 0.006 285.885 / 68%);
-  --glass-bg-strong: oklch(0.21 0.006 285.885 / 86%);
-  --glass-border: oklch(1 0 0 / 12%);
-  --glass-shadow: 0 18px 42px oklch(0 0 0 / 28%);
-  --panel-bg: oklch(0.18 0.006 270 / 94%);
-  --panel-border: oklch(1 0 0 / 11%);
-  --panel-shadow: 0 14px 34px oklch(0 0 0 / 24%);
+  --glass-bg: oklch(0.18 0.006 286);
+  --glass-bg-strong: oklch(0.18 0.006 286);
+  --glass-border: oklch(1 0 0 / 10%);
+  --glass-shadow: none;
+  --panel-bg: oklch(0.18 0.006 286);
+  --panel-border: oklch(1 0 0 / 10%);
+  --panel-shadow: none;
   --row-hover: oklch(1 0 0 / 6%);
-  --selected-bg: oklch(0.28 0.055 250 / 68%);
-  --selected-fg: oklch(0.86 0.065 250);
-  --selected-border: oklch(0.68 0.12 250);
-  --app-background: linear-gradient(
-    180deg,
-    oklch(0.15 0.008 270),
-    oklch(0.12 0.008 260)
-  );
+  --selected-bg: oklch(1 0 0 / 8%);
+  --selected-fg: oklch(0.95 0.003 286);
+  --selected-border: oklch(1 0 0 / 12%);
+  --list-panel: oklch(0.15 0.005 286);
+  --reader-bg: oklch(0.13 0.005 286);
+  --app-background: oklch(0.13 0.005 286);
 }
 
 @theme inline {
@@ -140,6 +136,9 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-panel: var(--panel-bg);
+  --color-list-panel: var(--list-panel);
+  --color-reader: var(--reader-bg);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -199,16 +198,15 @@
 .sidebar-row[data-selected="true"] {
   background: var(--selected-bg);
   color: var(--selected-fg);
-  font-weight: 600;
+  font-weight: 650;
 }
 
-.sidebar-row[data-selected="true"]::before,
-.article-row[data-selected="true"]::before {
+.sidebar-row[data-selected="true"]::before {
   content: "";
   position: absolute;
-  inset-block: 0.45rem;
-  left: 0;
-  width: 3px;
+  inset-block: 0.55rem;
+  left: 0.25rem;
+  width: 2px;
   border-radius: 999px;
   background: var(--primary);
 }
@@ -218,12 +216,12 @@
 }
 
 .sidebar-count {
-  min-width: 1.75rem;
+  min-width: 1.5rem;
   border-radius: 999px;
-  padding-inline: 0.35rem;
+  padding-inline: 0.25rem;
   text-align: right;
   font-size: 11px;
-  line-height: 1.25rem;
+  line-height: 1rem;
   color: var(--muted-foreground);
 }
 
@@ -234,6 +232,7 @@
 .article-row {
   position: relative;
   border-color: transparent;
+  background: transparent;
 }
 
 .article-row:hover {
@@ -243,7 +242,7 @@
 .article-row[data-selected="true"] {
   background: var(--selected-bg);
   border-color: var(--selected-border);
-  box-shadow: none;
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .article-row[data-selected="true"] h3 {
@@ -264,11 +263,34 @@
   font-weight: 500;
 }
 
+.bg-panel {
+  background: var(--panel-bg);
+}
+
+.bg-list-panel {
+  background: var(--list-panel);
+}
+
+.bg-reader {
+  background: var(--reader-bg);
+}
+
 /* Article content prose styles */
 .prose {
+  color: var(--foreground);
+  font-size: 16px;
+  line-height: 1.85;
   overflow-wrap: anywhere;
   word-wrap: break-word;
   word-break: normal;
+
+  :where(p, ul, ol, blockquote) {
+    margin-block: 1.1em;
+  }
+
+  :where(h2, h3) {
+    margin-top: 1.6em;
+  }
 
   pre {
     white-space: pre-wrap;
