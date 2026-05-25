@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowUp,
   Circle,
   CircleCheck,
   ChevronLeft,
@@ -35,6 +36,11 @@ export function ArticleDetailContent({
 }: ArticleDetailContentProps) {
   const { t } = useI18n();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const titleBlockRef = useRef<HTMLDivElement>(null);
+  const scrollFrameRef = useRef<number | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showScrolledTitle, setShowScrolledTitle] = useState(false);
+  const [canBackTop, setCanBackTop] = useState(false);
   const {
     article,
     bookmark,
@@ -56,9 +62,62 @@ export function ArticleDetailContent({
     starred,
   } = useSelectedArticleDetail();
 
+  const updateScrollState = useCallback(() => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) return;
+
+    const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+    const progress =
+      maxScrollTop === 0
+        ? 0
+        : Math.round((viewport.scrollTop / maxScrollTop) * 100);
+    const titleThreshold = titleBlockRef.current
+      ? titleBlockRef.current.offsetTop + titleBlockRef.current.offsetHeight - 48
+      : 96;
+
+    setScrollProgress(Math.min(100, Math.max(0, progress)));
+    setShowScrolledTitle(viewport.scrollTop > titleThreshold);
+    setCanBackTop(viewport.scrollTop > 120);
+  }, []);
+
+  const scheduleScrollStateUpdate = useCallback(() => {
+    if (scrollFrameRef.current !== null) return;
+
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+      updateScrollState();
+    });
+  }, [updateScrollState]);
+
   useEffect(() => {
     scrollViewportRef.current?.scrollTo({ top: 0 });
-  }, [article?.id, selectedArticleId]);
+    setScrollProgress(0);
+    setShowScrolledTitle(false);
+    setCanBackTop(false);
+    window.requestAnimationFrame(updateScrollState);
+  }, [article?.id, selectedArticleId, updateScrollState]);
+
+  useEffect(() => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) return;
+
+    updateScrollState();
+    viewport.addEventListener("scroll", scheduleScrollStateUpdate, {
+      passive: true,
+    });
+
+    return () => {
+      viewport.removeEventListener("scroll", scheduleScrollStateUpdate);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+    };
+  }, [article?.id, scheduleScrollStateUpdate, updateScrollState]);
+
+  const handleBackTop = () => {
+    scrollViewportRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const articleHtml = useMemo(() => {
     if (!article) return "";
@@ -79,10 +138,21 @@ export function ArticleDetailContent({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
       <div className="shrink-0 border-b border-border bg-reader">
-        <div className="mx-auto flex h-12 w-full max-w-4xl items-center justify-between gap-3 px-4 sm:px-8">
-          <div className="flex min-w-0 items-center gap-2">
+        <div className="flex h-12 w-full items-center gap-3 px-4 sm:px-6">
+          <div className="min-w-0 flex-1">
+            <h2
+              className={`truncate text-[15px] font-semibold transition-opacity duration-150 ${
+                showScrolledTitle ? "opacity-100" : "opacity-0"
+              }`}
+              aria-hidden={!showScrolledTitle}
+            >
+              {article.title}
+            </h2>
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -164,6 +234,7 @@ export function ArticleDetailContent({
               size="icon-sm"
               onClick={() => setSelectedArticle(null)}
               aria-label={t("common.cancel")}
+              className="shrink-0"
             >
               <X className="h-[18px] w-[18px] text-muted-foreground" />
             </Button>
@@ -176,7 +247,7 @@ export function ArticleDetailContent({
         viewportRef={scrollViewportRef}
       >
         <article className="mx-auto min-w-0 max-w-3xl px-5 py-9 sm:px-8 sm:py-12">
-          <div className="space-y-4">
+          <div ref={titleBlockRef} className="space-y-4">
             <h1 className="text-[30px] leading-[1.25] font-bold tracking-normal sm:text-[34px]">
               {article.title}
             </h1>
@@ -228,6 +299,27 @@ export function ArticleDetailContent({
           />
         </article>
       </ScrollArea>
+
+      <aside className="absolute top-24 right-8 z-10 hidden w-28 flex-col gap-2 text-xs text-muted-foreground xl:flex">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className="w-full rounded-full bg-primary transition-[height] duration-150"
+              style={{ height: `${scrollProgress}%` }}
+            />
+          </div>
+          <span className="font-medium text-foreground">{scrollProgress}%</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleBackTop}
+          disabled={!canBackTop}
+          className="flex h-8 items-center gap-1.5 rounded-md text-left transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+        >
+          <ArrowUp className="h-3.5 w-3.5" />
+          Back Top
+        </button>
+      </aside>
 
       <div className="shrink-0 border-t border-border bg-reader">
         <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-5 sm:px-8">

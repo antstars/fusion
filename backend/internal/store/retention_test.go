@@ -105,7 +105,7 @@ func TestCleanupItemsByRetentionMaxArticles(t *testing.T) {
 	}
 }
 
-func TestCleanupItemsByRetentionCombinedAndSavedSnapshots(t *testing.T) {
+func TestCleanupItemsByRetentionSkipsSavedItems(t *testing.T) {
 	store, _ := setupTestDB(t)
 	defer closeStore(t, store)
 
@@ -113,13 +113,16 @@ func TestCleanupItemsByRetentionCombinedAndSavedSnapshots(t *testing.T) {
 	feed := mustCreateFeed(t, store, group.ID, "Feed", "https://example.com/rss.xml", "", "")
 	now := time.Unix(1_700_000_000, 0)
 
-	old := mustCreateItem(t, store, feed.ID, "old", "Old", "https://example.com/old", "old content", now.AddDate(0, 0, -31).Unix())
-	kept := mustCreateItem(t, store, feed.ID, "kept", "Kept", "https://example.com/kept", "", now.AddDate(0, 0, -1).Unix())
-	mustSetItemTimes(t, store, old.ID, old.PubDate, old.PubDate)
-	mustSetItemTimes(t, store, kept.ID, kept.PubDate, kept.PubDate)
+	oldBookmarked := mustCreateItem(t, store, feed.ID, "old-bookmarked", "Old Bookmarked", "https://example.com/old-bookmarked", "bookmarked content", now.AddDate(0, 0, -33).Unix())
+	oldReadLater := mustCreateItem(t, store, feed.ID, "old-read-later", "Old Read Later", "https://example.com/old-read-later", "read later content", now.AddDate(0, 0, -32).Unix())
+	oldUnsaved := mustCreateItem(t, store, feed.ID, "old-unsaved", "Old Unsaved", "https://example.com/old-unsaved", "", now.AddDate(0, 0, -31).Unix())
+	recent := mustCreateItem(t, store, feed.ID, "recent", "Recent", "https://example.com/recent", "", now.AddDate(0, 0, -1).Unix())
+	for _, item := range []*model.Item{oldBookmarked, oldReadLater, oldUnsaved, recent} {
+		mustSetItemTimes(t, store, item.ID, item.PubDate, item.PubDate)
+	}
 
-	bookmark := mustCreateBookmark(t, store, &old.ID, old.Link, old.Title, old.Content, old.PubDate, feed.Name)
-	readLater := mustCreateReadLaterItem(t, store, &old.ID, old.Link, old.Title, old.Content, old.PubDate, feed.Name)
+	bookmark := mustCreateBookmark(t, store, &oldBookmarked.ID, oldBookmarked.Link, oldBookmarked.Title, oldBookmarked.Content, oldBookmarked.PubDate, feed.Name)
+	readLater := mustCreateReadLaterItem(t, store, &oldReadLater.ID, oldReadLater.Link, oldReadLater.Title, oldReadLater.Content, oldReadLater.PubDate, feed.Name)
 
 	deleted, err := store.CleanupItemsByRetention(model.RetentionSettings{MaxArticles: 1, RetentionDays: 30}, now)
 	if err != nil {
@@ -129,20 +132,111 @@ func TestCleanupItemsByRetentionCombinedAndSavedSnapshots(t *testing.T) {
 		t.Fatalf("deleted = %d, want 1", deleted)
 	}
 
+	if _, err := store.GetItem(oldBookmarked.ID); err != nil {
+		t.Fatalf("expected bookmarked item to remain: %v", err)
+	}
+	if _, err := store.GetItem(oldReadLater.ID); err != nil {
+		t.Fatalf("expected read-later item to remain: %v", err)
+	}
+	if _, err := store.GetItem(oldUnsaved.ID); err == nil {
+		t.Fatal("expected old unsaved item to be deleted")
+	}
+	if _, err := store.GetItem(recent.ID); err != nil {
+		t.Fatalf("expected recent item to remain: %v", err)
+	}
+
 	updatedBookmark, err := store.GetBookmark(bookmark.ID)
 	if err != nil {
 		t.Fatalf("GetBookmark() failed: %v", err)
 	}
-	if updatedBookmark.ItemID != nil || updatedBookmark.Content != old.Content {
-		t.Fatalf("expected bookmark snapshot to remain with nil item_id, got %+v", updatedBookmark)
+	if updatedBookmark.ItemID == nil || *updatedBookmark.ItemID != oldBookmarked.ID {
+		t.Fatalf("expected bookmark item_id to remain linked to %d, got %+v", oldBookmarked.ID, updatedBookmark)
 	}
 
 	updatedReadLater, err := store.GetReadLaterItem(readLater.ID)
 	if err != nil {
 		t.Fatalf("GetReadLaterItem() failed: %v", err)
 	}
-	if updatedReadLater.ItemID != nil || updatedReadLater.Content != old.Content {
-		t.Fatalf("expected read-later snapshot to remain with nil item_id, got %+v", updatedReadLater)
+	if updatedReadLater.ItemID == nil || *updatedReadLater.ItemID != oldReadLater.ID {
+		t.Fatalf("expected read-later item_id to remain linked to %d, got %+v", oldReadLater.ID, updatedReadLater)
+	}
+}
+
+func TestCleanupItemsByRetentionMaxArticlesSkipsSavedItems(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Tech")
+	feed := mustCreateFeed(t, store, group.ID, "Feed", "https://example.com/rss.xml", "", "")
+	now := time.Unix(1_700_000_000, 0)
+
+	oldestProtected := mustCreateItem(t, store, feed.ID, "oldest-protected", "Oldest Protected", "https://example.com/oldest-protected", "", now.Add(-5*time.Hour).Unix())
+	oldestRegular := mustCreateItem(t, store, feed.ID, "oldest-regular", "Oldest Regular", "https://example.com/oldest-regular", "", now.Add(-4*time.Hour).Unix())
+	middleProtected := mustCreateItem(t, store, feed.ID, "middle-protected", "Middle Protected", "https://example.com/middle-protected", "", now.Add(-3*time.Hour).Unix())
+	middleRegular := mustCreateItem(t, store, feed.ID, "middle-regular", "Middle Regular", "https://example.com/middle-regular", "", now.Add(-2*time.Hour).Unix())
+	newestRegular := mustCreateItem(t, store, feed.ID, "newest-regular", "Newest Regular", "https://example.com/newest-regular", "", now.Add(-time.Hour).Unix())
+	for _, item := range []*model.Item{oldestProtected, oldestRegular, middleProtected, middleRegular, newestRegular} {
+		mustSetItemTimes(t, store, item.ID, item.PubDate, item.PubDate)
+	}
+
+	mustCreateBookmark(t, store, &oldestProtected.ID, oldestProtected.Link, oldestProtected.Title, oldestProtected.Content, oldestProtected.PubDate, feed.Name)
+	mustCreateReadLaterItem(t, store, &middleProtected.ID, middleProtected.Link, middleProtected.Title, middleProtected.Content, middleProtected.PubDate, feed.Name)
+
+	deleted, err := store.CleanupItemsByRetention(model.RetentionSettings{MaxArticles: 2}, now)
+	if err != nil {
+		t.Fatalf("CleanupItemsByRetention() failed: %v", err)
+	}
+	if deleted != 1 {
+		t.Fatalf("deleted = %d, want 1", deleted)
+	}
+
+	if _, err := store.GetItem(oldestProtected.ID); err != nil {
+		t.Fatalf("expected oldest protected item to remain: %v", err)
+	}
+	if _, err := store.GetItem(oldestRegular.ID); err == nil {
+		t.Fatal("expected oldest regular item to be deleted")
+	}
+	if _, err := store.GetItem(middleProtected.ID); err != nil {
+		t.Fatalf("expected middle protected item to remain: %v", err)
+	}
+	if _, err := store.GetItem(middleRegular.ID); err != nil {
+		t.Fatalf("expected middle regular item to remain: %v", err)
+	}
+	if _, err := store.GetItem(newestRegular.ID); err != nil {
+		t.Fatalf("expected newest regular item to remain: %v", err)
+	}
+}
+
+func TestCleanupItemsByRetentionMaxArticlesDeletesNothingWhenOverflowIsSaved(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Tech")
+	feed := mustCreateFeed(t, store, group.ID, "Feed", "https://example.com/rss.xml", "", "")
+	now := time.Unix(1_700_000_000, 0)
+
+	oldBookmarked := mustCreateItem(t, store, feed.ID, "old-bookmarked", "Old Bookmarked", "https://example.com/old-bookmarked", "", now.Add(-3*time.Hour).Unix())
+	oldReadLater := mustCreateItem(t, store, feed.ID, "old-read-later", "Old Read Later", "https://example.com/old-read-later", "", now.Add(-2*time.Hour).Unix())
+	newestRegular := mustCreateItem(t, store, feed.ID, "newest-regular", "Newest Regular", "https://example.com/newest-regular", "", now.Add(-time.Hour).Unix())
+	for _, item := range []*model.Item{oldBookmarked, oldReadLater, newestRegular} {
+		mustSetItemTimes(t, store, item.ID, item.PubDate, item.PubDate)
+	}
+
+	mustCreateBookmark(t, store, &oldBookmarked.ID, oldBookmarked.Link, oldBookmarked.Title, oldBookmarked.Content, oldBookmarked.PubDate, feed.Name)
+	mustCreateReadLaterItem(t, store, &oldReadLater.ID, oldReadLater.Link, oldReadLater.Title, oldReadLater.Content, oldReadLater.PubDate, feed.Name)
+
+	deleted, err := store.CleanupItemsByRetention(model.RetentionSettings{MaxArticles: 1}, now)
+	if err != nil {
+		t.Fatalf("CleanupItemsByRetention() failed: %v", err)
+	}
+	if deleted != 0 {
+		t.Fatalf("deleted = %d, want 0", deleted)
+	}
+
+	for _, item := range []*model.Item{oldBookmarked, oldReadLater, newestRegular} {
+		if _, err := store.GetItem(item.ID); err != nil {
+			t.Fatalf("expected item %d to remain: %v", item.ID, err)
+		}
 	}
 }
 

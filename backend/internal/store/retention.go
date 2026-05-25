@@ -43,12 +43,19 @@ func (s *Store) CleanupItemsByCurrentRetention(now time.Time) (int, error) {
 	return s.CleanupItemsByRetention(*settings, now)
 }
 
+const retentionUnprotectedItemWhere = `
+	items.id NOT IN (SELECT item_id FROM bookmarks WHERE item_id IS NOT NULL)
+	AND items.id NOT IN (SELECT item_id FROM read_later_items WHERE item_id IS NOT NULL)
+`
+
 func (s *Store) deleteItemsWhere(where string, args ...any) (int, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
+
+	where = "(" + where + ") AND " + retentionUnprotectedItemWhere
 
 	if _, err := s.execWith(tx, `
 		UPDATE bookmarks
@@ -111,6 +118,7 @@ func (s *Store) listItemIDsExceedingLimit(maxArticles int) ([]int64, error) {
 	rows, err := s.query(`
 		SELECT id
 		FROM items
+		WHERE `+retentionUnprotectedItemWhere+`
 		ORDER BY (CASE WHEN pub_date > 0 THEN pub_date ELSE created_at END) DESC, id DESC
 		OFFSET :max_articles
 	`, sql.Named("max_articles", maxArticles))
