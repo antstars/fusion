@@ -7,7 +7,7 @@ import { useUIStore } from "@/store";
 
 export function Sidebar() {
   const { t } = useI18n();
-  const { setSearchOpen, setSettingsOpen } = useUIStore();
+  const { setAddFeedOpen, setSearchOpen, setSettingsOpen } = useUIStore();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isFeedsPage = pathname === "/feeds";
@@ -29,8 +29,8 @@ export function Sidebar() {
         <button
           type="button"
           className="liquid-control flex size-7 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-          onClick={() => setSearchOpen(true)}
-          aria-label={t("sidebar.search")}
+          onClick={() => setAddFeedOpen(true)}
+          aria-label={t("feed.add.title")}
         >
           <Plus className="h-4 w-4" />
         </button>
