@@ -36,6 +36,7 @@ export function ArticleDetailContent({
 }: ArticleDetailContentProps) {
   const { t } = useI18n();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const articleContentRef = useRef<HTMLElement>(null);
   const titleBlockRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -105,9 +106,22 @@ export function ArticleDetailContent({
     viewport.addEventListener("scroll", scheduleScrollStateUpdate, {
       passive: true,
     });
+    window.addEventListener("resize", scheduleScrollStateUpdate);
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleScrollStateUpdate);
+
+    resizeObserver?.observe(viewport);
+    if (articleContentRef.current) {
+      resizeObserver?.observe(articleContentRef.current);
+    }
 
     return () => {
       viewport.removeEventListener("scroll", scheduleScrollStateUpdate);
+      window.removeEventListener("resize", scheduleScrollStateUpdate);
+      resizeObserver?.disconnect();
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
         scrollFrameRef.current = null;
@@ -246,7 +260,10 @@ export function ArticleDetailContent({
         className="mobile-smooth-scroll min-h-0 flex-1"
         viewportRef={scrollViewportRef}
       >
-        <article className="mx-auto min-w-0 max-w-[760px] px-5 py-10 sm:px-10 sm:py-14">
+        <article
+          ref={articleContentRef}
+          className="mx-auto min-w-0 max-w-[760px] px-5 py-10 sm:px-10 sm:py-14"
+        >
           <div ref={titleBlockRef} className="space-y-4">
             <h1 className="text-[31px] leading-[1.18] font-semibold tracking-normal sm:text-[38px]">
               {article.title}
@@ -300,24 +317,28 @@ export function ArticleDetailContent({
         </article>
       </ScrollArea>
 
-      <aside className="liquid-panel absolute top-24 right-7 z-10 hidden w-28 flex-col gap-2 rounded-xl border px-3 py-2 text-xs text-muted-foreground 2xl:flex">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-1 overflow-hidden rounded-full bg-muted">
-            <div
-              className="w-full rounded-full bg-primary transition-[height] duration-150"
-              style={{ height: `${scrollProgress}%` }}
-            />
-          </div>
-          <span className="font-medium text-foreground">{scrollProgress}%</span>
+      <aside
+        className="reader-progress-control liquid-panel"
+        aria-label="Reading progress"
+      >
+        <div
+          className="h-20 w-1.5 overflow-hidden rounded-full bg-muted/80"
+          aria-hidden="true"
+        >
+          <div
+            className="w-full rounded-full bg-primary transition-[height] duration-200 ease-out"
+            style={{ height: `${scrollProgress}%` }}
+          />
         </div>
         <button
           type="button"
           onClick={handleBackTop}
           disabled={!canBackTop}
-          className="flex h-8 items-center gap-1.5 rounded-md text-left transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+          aria-label="Back to top"
+          title="Back to top"
         >
-          <ArrowUp className="h-3.5 w-3.5" />
-          Back Top
+          <ArrowUp className="h-4 w-4" />
         </button>
       </aside>
 
