@@ -410,10 +410,14 @@
   background: var(--reader-bg);
 }
 
+.article-detail-shell {
+  container-type: inline-size;
+}
+
 .reader-progress-control {
-  position: fixed;
+  position: absolute;
   top: 8.5rem;
-  right: max(1.25rem, calc((100vw - 760px) / 2 - 4.75rem));
+  right: max(1.25rem, calc((100% - 760px) / 2 - 4.75rem));
   z-index: 20;
   display: none;
   flex-direction: column;
@@ -425,7 +429,7 @@
   padding: 0.65rem 0.45rem;
 }
 
-@media (min-width: 1280px) {
+@container (min-width: 960px) {
   .reader-progress-control {
     display: flex;
   }

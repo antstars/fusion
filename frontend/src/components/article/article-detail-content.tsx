@@ -152,7 +152,7 @@ export function ArticleDetailContent({
   }
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="article-detail-shell relative flex h-full flex-col">
       <div className="liquid-edge shrink-0 border-b border-border bg-panel">
         <div className="flex h-[52px] w-full items-center gap-3 px-4 sm:px-5">
           <div className="min-w-0 flex-1">
