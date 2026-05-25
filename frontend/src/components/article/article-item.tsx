@@ -40,7 +40,9 @@ function ArticleItemComponent({
       <span
         className={cn(
           "mt-[1.15rem] size-1.5 shrink-0 rounded-full",
-          article.unread ? "bg-primary shadow-[0_0_0_2px_oklch(0.62_0.18_254_/_12%)]" : "bg-transparent",
+          article.unread
+            ? "bg-primary shadow-[0_0_0_1px_oklch(0.62_0.18_254_/_10%)]"
+            : "bg-transparent",
         )}
         aria-hidden="true"
       />
