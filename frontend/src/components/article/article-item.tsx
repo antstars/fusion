@@ -32,7 +32,7 @@ function ArticleItemComponent({
         }
       }}
       className={cn(
-        "article-row group relative flex w-full cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-3 text-left transition-colors",
+        "article-row group relative flex w-full cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-3 text-left transition-all",
         compact && "px-2.5 py-2.5",
       )}
       data-selected={isSelected}
