@@ -39,7 +39,7 @@ export function FeedGroup({
     >
       <div
         className={cn(
-          "sidebar-row flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-[13px] transition-colors",
+          "sidebar-row flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg px-2 text-[13px] transition-colors",
         )}
         data-selected={isSelected}
       >

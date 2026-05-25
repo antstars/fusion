@@ -29,7 +29,7 @@ export function FeedItem({ feed }: FeedItemProps) {
   return (
     <div
       className={cn(
-        "sidebar-row group flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-[13px] transition-colors",
+        "sidebar-row group flex h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left text-[13px] transition-colors",
       )}
       data-selected={isSelected}
     >

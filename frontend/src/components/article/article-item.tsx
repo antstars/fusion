@@ -32,7 +32,7 @@ function ArticleItemComponent({
         }
       }}
       className={cn(
-        "article-row group relative flex w-full cursor-pointer items-start gap-2.5 rounded-md border px-3 py-3 text-left transition-colors",
+        "article-row group relative flex w-full cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-3 text-left transition-colors",
         compact && "px-2.5 py-2.5",
       )}
       data-selected={isSelected}
@@ -40,7 +40,7 @@ function ArticleItemComponent({
       <span
         className={cn(
           "mt-[1.15rem] size-1.5 shrink-0 rounded-full",
-          article.unread ? "bg-primary" : "bg-transparent",
+          article.unread ? "bg-primary shadow-[0_0_0_2px_oklch(0.62_0.18_254_/_12%)]" : "bg-transparent",
         )}
         aria-hidden="true"
       />
@@ -57,7 +57,7 @@ function ArticleItemComponent({
             "line-clamp-2 text-[14px] leading-snug",
             article.unread
               ? "font-semibold text-foreground"
-              : "font-medium text-muted-foreground",
+              : "font-medium text-foreground/72",
           )}
         >
           {article.title}

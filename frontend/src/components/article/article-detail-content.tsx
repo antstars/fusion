@@ -139,8 +139,8 @@ export function ArticleDetailContent({
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="liquid-edge shrink-0 border-b border-border bg-reader/90">
-        <div className="flex h-12 w-full items-center gap-3 px-4 sm:px-5">
+      <div className="liquid-edge shrink-0 border-b border-border bg-panel">
+        <div className="flex h-[52px] w-full items-center gap-3 px-4 sm:px-5">
           <div className="min-w-0 flex-1">
             <h2
               className={`truncate text-[15px] font-semibold transition-opacity duration-150 ${
@@ -152,7 +152,7 @@ export function ArticleDetailContent({
             </h2>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -246,9 +246,9 @@ export function ArticleDetailContent({
         className="mobile-smooth-scroll min-h-0 flex-1"
         viewportRef={scrollViewportRef}
       >
-        <article className="mx-auto min-w-0 max-w-3xl px-5 py-9 sm:px-8 sm:py-12">
+        <article className="mx-auto min-w-0 max-w-[760px] px-5 py-10 sm:px-10 sm:py-14">
           <div ref={titleBlockRef} className="space-y-4">
-            <h1 className="text-[30px] leading-[1.25] font-bold tracking-normal sm:text-[34px]">
+            <h1 className="text-[31px] leading-[1.18] font-semibold tracking-normal sm:text-[38px]">
               {article.title}
             </h1>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
@@ -292,7 +292,7 @@ export function ArticleDetailContent({
           </div>
 
           <div
-            className="prose prose-neutral mt-8 min-w-0 max-w-none break-words dark:prose-invert"
+            className="prose prose-neutral mt-9 min-w-0 max-w-none break-words dark:prose-invert"
             dangerouslySetInnerHTML={{
               __html: articleHtml,
             }}
@@ -300,7 +300,7 @@ export function ArticleDetailContent({
         </article>
       </ScrollArea>
 
-      <aside className="liquid-panel absolute top-24 right-8 z-10 hidden w-28 flex-col gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground xl:flex">
+      <aside className="liquid-panel absolute top-24 right-7 z-10 hidden w-28 flex-col gap-2 rounded-xl border px-3 py-2 text-xs text-muted-foreground 2xl:flex">
         <div className="flex items-center gap-2">
           <div className="h-6 w-1 overflow-hidden rounded-full bg-muted">
             <div
@@ -321,8 +321,8 @@ export function ArticleDetailContent({
         </button>
       </aside>
 
-      <div className="liquid-edge shrink-0 border-t border-border bg-reader/90">
-        <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-5 sm:px-8">
+      <div className="liquid-edge shrink-0 border-t border-border bg-panel">
+        <div className="mx-auto flex h-[48px] w-full max-w-[760px] items-center justify-between px-5 sm:px-10">
           <Button
             variant="ghost"
             size="sm"

@@ -80,11 +80,11 @@ export function FeedGroupCard({
   t,
 }: FeedGroupCardProps) {
   return (
-    <div className="glass-panel overflow-hidden rounded-lg border">
+    <div className="glass-panel overflow-hidden rounded-xl border">
       <div
         className={cn(
-          "group/header flex items-center justify-between bg-background/45 px-3.5 py-2.5",
-          isCollapsed ? "rounded-lg" : "rounded-t-lg",
+          "group/header flex items-center justify-between bg-background/32 px-3.5 py-2.5",
+          isCollapsed ? "rounded-xl" : "rounded-t-xl",
         )}
       >
         {isEditing ? (
@@ -114,7 +114,7 @@ export function FeedGroupCard({
             />
             <span
               className={cn(
-                "rounded-full bg-muted px-2 py-0.5 text-[11px]",
+                "rounded-full bg-muted/75 px-2 py-0.5 text-[11px]",
                 isCollapsed
                   ? "font-medium text-muted-foreground"
                   : "font-semibold text-muted-foreground",
@@ -152,7 +152,7 @@ export function FeedGroupCard({
             </span>
             <span
               className={cn(
-                "rounded-full bg-muted px-2 py-0.5 text-[11px]",
+                "rounded-full bg-muted/75 px-2 py-0.5 text-[11px]",
                 isCollapsed
                   ? "font-medium text-muted-foreground"
                   : "font-semibold text-muted-foreground",
@@ -169,7 +169,7 @@ export function FeedGroupCard({
               e.stopPropagation();
               onOpenAddFeed();
             }}
-            className="rounded p-1 hover:bg-accent"
+            className="rounded-md p-1 hover:bg-accent"
             aria-label={t("feed.add.button")}
           >
             <Plus className="h-3.5 w-3.5 text-muted-foreground" />
@@ -180,7 +180,7 @@ export function FeedGroupCard({
               e.stopPropagation();
               onStartEditingGroup(group);
             }}
-            className="rounded p-1 hover:bg-accent"
+            className="rounded-md p-1 hover:bg-accent"
             aria-label={t("feeds.toast.renamed")}
           >
             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
@@ -192,7 +192,7 @@ export function FeedGroupCard({
                 e.stopPropagation();
                 onOpenDeleteGroup(group);
               }}
-              className="rounded p-1 hover:bg-accent"
+              className="rounded-md p-1 hover:bg-accent"
               aria-label={t("feeds.deleteGroup.title")}
             >
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -207,7 +207,7 @@ export function FeedGroupCard({
             <div
               key={feed.id}
               className={cn(
-                "flex items-center justify-between py-2.5 pl-8 pr-3.5 transition-colors hover:bg-background/50 sm:pl-11",
+                "flex items-center justify-between py-2.5 pl-8 pr-3.5 transition-colors hover:bg-background/45 sm:pl-11",
                 index < groupFeeds.length - 1 && "border-b border-border/50",
               )}
             >
@@ -277,7 +277,7 @@ export function FeedGroupCard({
                   type="button"
                   onClick={() => onRefreshFeed(feed)}
                   disabled={refreshingFeedId === feed.id}
-                  className="rounded p-1 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                  className="rounded-md p-1 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
                   aria-label={t("feed.action.refresh")}
                 >
                   <RefreshCw
@@ -291,7 +291,7 @@ export function FeedGroupCard({
                   type="button"
                   onClick={() => onToggleFeedSuspended(feed)}
                   disabled={togglingFeedId === feed.id}
-                  className="rounded p-1 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                  className="rounded-md p-1 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
                   aria-label={
                     feed.suspended
                       ? t("feed.action.resume")
@@ -307,7 +307,7 @@ export function FeedGroupCard({
                 <button
                   type="button"
                   onClick={() => onOpenEditFeed(feed)}
-                  className="rounded p-1 hover:bg-accent"
+                  className="rounded-md p-1 hover:bg-accent"
                   aria-label={t("feed.edit.title")}
                 >
                   <Pencil className="h-3.5 w-3.5 text-muted-foreground" />

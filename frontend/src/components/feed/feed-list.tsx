@@ -90,7 +90,7 @@ export function FeedList() {
               key={value}
               onClick={() => selectTopLevelFilter(value)}
               className={cn(
-                "sidebar-row flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-[13px] transition-colors",
+                "sidebar-row flex h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left text-[13px] transition-colors",
               )}
               data-selected={isTopLevelSelected && articleFilter === value}
             >
@@ -103,7 +103,7 @@ export function FeedList() {
 
         {/* Feeds header */}
         <div className="mt-3 flex items-center justify-between px-2 py-1">
-          <span className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.02em] text-muted-foreground">
             {t("search.group.feeds")}
           </span>
         </div>

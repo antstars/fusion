@@ -255,7 +255,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
             value={articleFilter}
             onValueChange={(v) => setArticleFilter(v as ArticleFilter)}
           >
-            <TabsList className="liquid-control h-8 border p-0.5">
+            <TabsList className="w-full">
               <TabsTrigger value="all">{t("article.filter.all")}</TabsTrigger>
               <TabsTrigger value="unread">{t("article.filter.unread")}</TabsTrigger>
               <TabsTrigger value="starred">
@@ -270,7 +270,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
         {/* Article list */}
         <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-0.5 pr-1">
+          <div className="space-y-1 pr-1">
             {isLoading && articles.length === 0 ? (
               <div className="space-y-2 p-2">
                 {[1, 2, 3, 4, 5].map((i) => (

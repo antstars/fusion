@@ -257,7 +257,7 @@ function FeedsPage() {
 
   return (
     <AppLayout>
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background/35">
         <ContentHeader>
           <div className="flex items-center gap-1">
             <SidebarTrigger />
@@ -271,7 +271,7 @@ function FeedsPage() {
           </div>
         </ContentHeader>
 
-        <div className="glass-panel mx-4 mt-4 flex flex-col gap-3 rounded-lg border px-4 py-3 sm:mx-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="glass-panel mx-3 mt-3 flex flex-col gap-3 rounded-xl border px-3 py-3 sm:mx-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <div className="relative flex-1 sm:flex-initial">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -279,7 +279,7 @@ function FeedsPage() {
                 placeholder={t("feeds.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 w-full pl-9 sm:w-[280px]"
+                className="h-8 w-full pl-9 sm:w-[280px]"
                 name="feed-search"
                 autoComplete="off"
                 aria-label={t("feeds.searchPlaceholder")}
@@ -313,7 +313,7 @@ function FeedsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm">
@@ -370,7 +370,7 @@ function FeedsPage() {
         </div>
 
         <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-2 p-4 sm:p-6">
+          <div className="space-y-2 p-3 sm:p-5">
             {hasNoFeeds ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 {t("feeds.empty")}

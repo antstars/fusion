@@ -11,7 +11,9 @@ export function ArticleDetailPane() {
     return (
       <section className="flex h-full flex-1 items-center justify-center overflow-hidden bg-reader text-muted-foreground">
         <div className="flex flex-col items-center gap-3 text-center">
-          <FileText className="h-10 w-10 opacity-50" />
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-muted/55 shadow-[inset_0_1px_0_oklch(1_0_0_/_35%)]">
+            <FileText className="h-7 w-7 opacity-50" />
+          </div>
           <p className="text-sm">{t("article.detail.selectArticle")}</p>
         </div>
       </section>
