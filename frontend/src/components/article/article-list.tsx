@@ -255,7 +255,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
             value={articleFilter}
             onValueChange={(v) => setArticleFilter(v as ArticleFilter)}
           >
-            <TabsList className="h-8 border border-border bg-muted/60 p-0.5">
+            <TabsList className="liquid-control h-8 border p-0.5">
               <TabsTrigger value="all">{t("article.filter.all")}</TabsTrigger>
               <TabsTrigger value="unread">{t("article.filter.unread")}</TabsTrigger>
               <TabsTrigger value="starred">

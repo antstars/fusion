@@ -28,7 +28,7 @@ export function Sidebar() {
         </span>
         <button
           type="button"
-          className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+          className="liquid-control flex size-7 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
           onClick={() => setSearchOpen(true)}
           aria-label={t("sidebar.search")}
         >
@@ -39,7 +39,7 @@ export function Sidebar() {
       {/* Search button */}
       <div className="bg-sidebar px-2 pb-2">
         <button
-          className="flex h-8 w-full items-center justify-between rounded-md border border-sidebar-border bg-background/70 px-2.5 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+          className="liquid-control flex h-8 w-full items-center justify-between rounded-md border px-2.5 text-muted-foreground transition-colors hover:text-foreground"
           onClick={() => setSearchOpen(true)}
         >
           <div className="flex items-center gap-2">

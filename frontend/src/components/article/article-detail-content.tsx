@@ -139,7 +139,7 @@ export function ArticleDetailContent({
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="shrink-0 border-b border-border bg-reader">
+      <div className="liquid-edge shrink-0 border-b border-border bg-reader/90">
         <div className="flex h-12 w-full items-center gap-3 px-4 sm:px-5">
           <div className="min-w-0 flex-1">
             <h2
@@ -300,7 +300,7 @@ export function ArticleDetailContent({
         </article>
       </ScrollArea>
 
-      <aside className="absolute top-24 right-8 z-10 hidden w-28 flex-col gap-2 text-xs text-muted-foreground xl:flex">
+      <aside className="liquid-panel absolute top-24 right-8 z-10 hidden w-28 flex-col gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground xl:flex">
         <div className="flex items-center gap-2">
           <div className="h-6 w-1 overflow-hidden rounded-full bg-muted">
             <div
@@ -321,7 +321,7 @@ export function ArticleDetailContent({
         </button>
       </aside>
 
-      <div className="shrink-0 border-t border-border bg-reader">
+      <div className="liquid-edge shrink-0 border-t border-border bg-reader/90">
         <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-5 sm:px-8">
           <Button
             variant="ghost"

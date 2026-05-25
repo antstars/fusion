@@ -39,13 +39,14 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.55 0.12 250);
-  --glass-bg: oklch(1 0 0);
-  --glass-bg-strong: oklch(1 0 0);
-  --glass-border: oklch(0.91 0.004 286);
-  --glass-shadow: none;
+  --glass-bg: oklch(1 0 0 / 62%);
+  --glass-bg-strong: oklch(1 0 0 / 78%);
+  --glass-border: oklch(1 0 0 / 72%);
+  --glass-highlight: oklch(1 0 0 / 86%);
+  --glass-shadow: 0 12px 32px oklch(0.32 0.025 286 / 9%);
   --panel-bg: oklch(1 0 0);
   --panel-border: oklch(0.91 0.004 286);
-  --panel-shadow: none;
+  --panel-shadow: 0 10px 28px oklch(0.32 0.025 286 / 6%);
   --row-hover: oklch(0.935 0.003 286);
   --selected-bg: oklch(0.93 0.004 286);
   --selected-fg: oklch(0.18 0.006 286);
@@ -87,13 +88,14 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.6 0.12 250);
-  --glass-bg: oklch(0.18 0.006 286);
-  --glass-bg-strong: oklch(0.18 0.006 286);
-  --glass-border: oklch(1 0 0 / 10%);
-  --glass-shadow: none;
+  --glass-bg: oklch(0.24 0.006 286 / 52%);
+  --glass-bg-strong: oklch(0.24 0.006 286 / 68%);
+  --glass-border: oklch(1 0 0 / 13%);
+  --glass-highlight: oklch(1 0 0 / 18%);
+  --glass-shadow: 0 16px 36px oklch(0 0 0 / 24%);
   --panel-bg: oklch(0.18 0.006 286);
   --panel-border: oklch(1 0 0 / 10%);
-  --panel-shadow: none;
+  --panel-shadow: 0 14px 30px oklch(0 0 0 / 18%);
   --row-hover: oklch(1 0 0 / 6%);
   --selected-bg: oklch(1 0 0 / 8%);
   --selected-fg: oklch(0.95 0.003 286);
@@ -159,30 +161,94 @@
 }
 
 .glass-panel {
-  background: var(--panel-bg);
-  border-color: var(--panel-border);
-  box-shadow: var(--panel-shadow);
-  backdrop-filter: blur(10px);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .glass-panel-strong {
-  background: var(--panel-bg);
-  border-color: var(--panel-border);
-  box-shadow: var(--panel-shadow);
-  backdrop-filter: blur(10px);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .glass-control {
-  background: var(--panel-bg);
-  border-color: var(--panel-border);
-  box-shadow: 0 1px 2px oklch(0 0 0 / 4%);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 1px 3px oklch(0 0 0 / 5%);
 }
 
 .app-panel {
   background: var(--panel-bg);
   border-color: var(--panel-border);
   box-shadow: var(--panel-shadow);
+}
+
+.liquid-panel {
+  position: relative;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.liquid-panel::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    inset 1px 0 0 oklch(1 0 0 / 32%);
+}
+
+.liquid-control {
+  position: relative;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 1px 4px oklch(0 0 0 / 5%);
+}
+
+.liquid-edge {
+  position: relative;
+}
+
+.liquid-edge::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-highlight),
+    transparent
+  );
+}
+
+@supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+  .glass-panel,
+  .glass-panel-strong,
+  .glass-control,
+  .liquid-panel,
+  .liquid-control {
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    backdrop-filter: blur(18px) saturate(1.35);
+  }
+
+  .glass-control,
+  .liquid-control {
+    -webkit-backdrop-filter: blur(12px) saturate(1.25);
+    backdrop-filter: blur(12px) saturate(1.25);
+  }
 }
 
 .sidebar-row {
@@ -240,9 +306,12 @@
 }
 
 .article-row[data-selected="true"] {
-  background: var(--selected-bg);
-  border-color: var(--selected-border);
-  box-shadow: inset 3px 0 0 var(--primary);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border);
+  box-shadow:
+    inset 3px 0 0 var(--primary),
+    inset 0 1px 0 var(--glass-highlight),
+    0 6px 18px oklch(0.32 0.025 286 / 7%);
 }
 
 .article-row[data-selected="true"] h3 {
