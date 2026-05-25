@@ -140,7 +140,7 @@ export function ArticleDetailContent({
   return (
     <div className="relative flex h-full flex-col">
       <div className="shrink-0 border-b border-border bg-reader">
-        <div className="flex h-12 w-full items-center gap-3 px-4 sm:px-6">
+        <div className="flex h-12 w-full items-center gap-3 px-4 sm:px-5">
           <div className="min-w-0 flex-1">
             <h2
               className={`truncate text-[15px] font-semibold transition-opacity duration-150 ${

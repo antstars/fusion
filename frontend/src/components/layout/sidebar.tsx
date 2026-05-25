@@ -15,7 +15,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar-typography flex h-full w-full flex-none flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-none md:w-[236px]">
       {/* Header */}
-      <div className="flex h-12 shrink-0 items-center gap-2 px-3">
+      <div className="flex h-12 shrink-0 items-center gap-2 bg-sidebar px-3">
         <img
           src="/icon-32.png"
           alt={t("common.fusionLogo")}
@@ -37,7 +37,7 @@ export function Sidebar() {
       </div>
 
       {/* Search button */}
-      <div className="px-2 pb-2">
+      <div className="bg-sidebar px-2 pb-2">
         <button
           className="flex h-8 w-full items-center justify-between rounded-md border border-sidebar-border bg-background/70 px-2.5 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
           onClick={() => setSearchOpen(true)}
@@ -56,7 +56,7 @@ export function Sidebar() {
       <FeedList />
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border p-2">
+      <div className="border-t border-sidebar-border bg-sidebar p-2">
         <button
           className={cn(
             "sidebar-row flex h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",

@@ -222,7 +222,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <ContentHeader className={compact ? "px-4 sm:px-4" : undefined}>
+      <ContentHeader className={compact ? "px-3 sm:px-3" : undefined}>
         <div className="flex min-w-0 items-center gap-1">
           <SidebarTrigger />
           <h2 className="truncate text-[17px] font-semibold tracking-normal">
@@ -234,7 +234,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
           size="icon-sm"
           onClick={handleMarkAllAsRead}
           disabled={unreadCount === 0}
-          className="text-muted-foreground hover:text-foreground"
+          className="mr-1 text-muted-foreground hover:text-foreground"
           aria-label={t("article.list.markAllRead")}
           title={t("article.list.markAllRead")}
         >
