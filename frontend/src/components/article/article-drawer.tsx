@@ -1,5 +1,4 @@
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { LiquidGlassPanel } from "@/components/ui/liquid-glass-panel";
 import { useUrlState } from "@/hooks/use-url-state";
 import { ArticleDetailContent } from "./article-detail-content";
 
@@ -20,9 +19,7 @@ export function ArticleDrawer() {
         showCloseButton={false}
       >
         <SheetTitle className="sr-only">Article</SheetTitle>
-        <LiquidGlassPanel className="h-full w-full" cornerRadius={0}>
-          <ArticleDetailContent showCloseButton />
-        </LiquidGlassPanel>
+        <ArticleDetailContent showCloseButton />
       </SheetContent>
     </Sheet>
   );
