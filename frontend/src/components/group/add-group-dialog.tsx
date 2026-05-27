@@ -46,7 +46,7 @@ export function AddGroupDialog() {
         if (!open) setName("");
       }}
     >
-      <DialogContent className="glass-panel-strong sm:max-w-[400px]">
+      <DialogContent className="bg-popover sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>{t("group.add.title")}</DialogTitle>
           <DialogDescription>

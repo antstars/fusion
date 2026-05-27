@@ -153,7 +153,7 @@ export function ArticleDetailContent({
 
   return (
     <div className="article-detail-shell relative flex h-full flex-col">
-      <div className="liquid-edge shrink-0 border-b border-border bg-panel">
+      <div className="shrink-0 border-b border-border bg-panel">
         <div className="flex h-[52px] w-full items-center gap-3 px-4 sm:px-5">
           <div className="min-w-0 flex-1">
             <h2
@@ -318,7 +318,7 @@ export function ArticleDetailContent({
       </ScrollArea>
 
       <aside
-        className="reader-progress-control liquid-panel"
+        className="reader-progress-control app-panel"
         aria-label="Reading progress"
       >
         <div
@@ -342,7 +342,7 @@ export function ArticleDetailContent({
         </button>
       </aside>
 
-      <div className="liquid-edge shrink-0 border-t border-border bg-panel">
+      <div className="shrink-0 border-t border-border bg-panel">
         <div className="mx-auto flex h-[48px] w-full max-w-[760px] items-center justify-between px-5 sm:px-10">
           <Button
             variant="ghost"

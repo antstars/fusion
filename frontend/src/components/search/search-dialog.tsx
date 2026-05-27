@@ -119,7 +119,7 @@ export function SearchDialog() {
         <DialogDescription>{t("search.description")}</DialogDescription>
       </DialogHeader>
       <DialogContent
-        className="glass-panel-strong overflow-hidden p-0"
+        className="overflow-hidden bg-popover p-0"
         showCloseButton={false}
       >
         <Command

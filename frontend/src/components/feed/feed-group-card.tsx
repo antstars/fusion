@@ -80,7 +80,7 @@ export function FeedGroupCard({
   t,
 }: FeedGroupCardProps) {
   return (
-    <div className="glass-panel overflow-hidden rounded-xl border">
+    <div className="overflow-hidden rounded-xl border bg-card">
       <div
         className={cn(
           "group/header flex items-center justify-between bg-background/32 px-3.5 py-2.5",

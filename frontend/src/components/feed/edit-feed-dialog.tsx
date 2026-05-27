@@ -164,7 +164,7 @@ export function EditFeedDialog() {
         onOpenChange={(open) => setEditFeedOpen(open)}
       >
         <DialogContent
-          className="glass-panel-strong flex w-full max-w-[480px] flex-col gap-0 overflow-hidden p-0"
+          className="flex w-full max-w-[480px] flex-col gap-0 overflow-hidden bg-popover p-0"
           showCloseButton={false}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
@@ -351,7 +351,7 @@ export function EditFeedDialog() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="glass-panel-strong sm:max-w-[425px]">
+        <DialogContent className="bg-popover sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{t("feed.edit.deleteConfirm.title")}</DialogTitle>
             <DialogDescription>
