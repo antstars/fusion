@@ -39,6 +39,7 @@ import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
   useFeedLookup,
+  useDeleteFeed,
   useMoveFeedsToGroup,
   useRefreshFeed,
   useRefreshFeeds,
@@ -61,6 +62,7 @@ function FeedsPage() {
   const { feeds, getFeedsByGroup, isLoading: isFeedsLoading } = useFeedLookup();
   const updateGroupMutation = useUpdateGroup();
   const deleteGroupMutation = useDeleteGroup();
+  const deleteFeedMutation = useDeleteFeed();
   const moveFeedsMutation = useMoveFeedsToGroup();
   const refreshFeedsMutation = useRefreshFeeds();
   const refreshFeedMutation = useRefreshFeed();
@@ -85,6 +87,8 @@ function FeedsPage() {
 
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingFeed, setDeletingFeed] = useState<Feed | null>(null);
+  const [isDeletingFeed, setIsDeletingFeed] = useState(false);
 
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
   const [refreshingFeedId, setRefreshingFeedId] = useState<number | null>(null);
@@ -229,6 +233,21 @@ function FeedsPage() {
       toast.error(t("feeds.toast.deleteFailed"));
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const confirmDeleteFeed = async () => {
+    if (!deletingFeed) return;
+
+    setIsDeletingFeed(true);
+    try {
+      await deleteFeedMutation.mutateAsync(deletingFeed.id);
+      toast.success(t("feed.toast.unsubscribed", { name: deletingFeed.name }));
+      setDeletingFeed(null);
+    } catch {
+      toast.error(t("feed.toast.unsubscribeFailed"));
+    } finally {
+      setIsDeletingFeed(false);
     }
   };
 
@@ -401,6 +420,7 @@ function FeedsPage() {
                       onOpenAddFeed={() => setAddFeedOpen(true)}
                       onOpenDeleteGroup={setDeletingGroup}
                       onOpenEditFeed={(feed) => setEditFeedOpen(true, feed)}
+                      onOpenDeleteFeed={setDeletingFeed}
                       onRefreshFeed={(feed) => {
                         void handleRefreshFeed(feed);
                       }}
@@ -409,6 +429,9 @@ function FeedsPage() {
                       }}
                       refreshingFeedId={refreshingFeedId}
                       togglingFeedId={togglingFeedId}
+                      deletingFeedId={
+                        isDeletingFeed ? deletingFeed?.id ?? null : null
+                      }
                       onChangeMobileErrorTooltipFeedId={setMobileErrorTooltipFeedId}
                       t={t}
                     />
@@ -462,6 +485,42 @@ function FeedsPage() {
               disabled={isDeleting}
             >
               {isDeleting ? t("common.deleting") : t("common.delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletingFeed !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingFeed) setDeletingFeed(null);
+        }}
+      >
+        <DialogContent className="bg-popover sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{t("feed.edit.deleteConfirm.title")}</DialogTitle>
+            <DialogDescription>
+              {t("feed.edit.deleteConfirm.description", {
+                name: deletingFeed?.name ?? "",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeletingFeed(null)}
+              disabled={isDeletingFeed}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteFeed}
+              disabled={isDeletingFeed}
+            >
+              {isDeletingFeed
+                ? t("common.deleting")
+                : t("feed.edit.unsubscribe")}
             </Button>
           </DialogFooter>
         </DialogContent>

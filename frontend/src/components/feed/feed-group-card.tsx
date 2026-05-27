@@ -40,10 +40,12 @@ interface FeedGroupCardProps {
   onOpenAddFeed: () => void;
   onOpenDeleteGroup: (group: Group) => void;
   onOpenEditFeed: (feed: Feed) => void;
+  onOpenDeleteFeed: (feed: Feed) => void;
   onRefreshFeed: (feed: Feed) => void;
   onToggleFeedSuspended: (feed: Feed) => void;
   refreshingFeedId: number | null;
   togglingFeedId: number | null;
+  deletingFeedId: number | null;
   onChangeMobileErrorTooltipFeedId: Dispatch<SetStateAction<number | null>>;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
@@ -72,10 +74,12 @@ export function FeedGroupCard({
   onOpenAddFeed,
   onOpenDeleteGroup,
   onOpenEditFeed,
+  onOpenDeleteFeed,
   onRefreshFeed,
   onToggleFeedSuspended,
   refreshingFeedId,
   togglingFeedId,
+  deletingFeedId,
   onChangeMobileErrorTooltipFeedId,
   t,
 }: FeedGroupCardProps) {
@@ -320,6 +324,15 @@ export function FeedGroupCard({
                   aria-label={t("feed.edit.title")}
                 >
                   <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenDeleteFeed(feed)}
+                  disabled={deletingFeedId === feed.id}
+                  className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
+                  aria-label={t("feed.edit.unsubscribe")}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
