@@ -63,8 +63,13 @@ function DataContent() {
 
   useEffect(() => {
     if (!settings) return;
-    setMaxArticles(settings.max_articles.toString());
-    setRetentionDays(settings.retention_days.toString());
+
+    const frame = window.requestAnimationFrame(() => {
+      setMaxArticles(settings.max_articles.toString());
+      setRetentionDays(settings.retention_days.toString());
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [settings]);
 
   const parsedMaxArticles = Number.parseInt(maxArticles, 10);

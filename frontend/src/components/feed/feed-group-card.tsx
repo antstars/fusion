@@ -80,11 +80,11 @@ export function FeedGroupCard({
   t,
 }: FeedGroupCardProps) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-card">
+    <div className="overflow-hidden rounded-lg border border-border/70 bg-card/70 shadow-[var(--panel-shadow)]">
       <div
         className={cn(
-          "group/header flex items-center justify-between bg-background/32 px-3.5 py-2.5",
-          isCollapsed ? "rounded-xl" : "rounded-t-xl",
+          "group/header flex items-center justify-between bg-background/28 px-3 py-2",
+          isCollapsed ? "rounded-lg" : "rounded-t-lg",
         )}
       >
         {isEditing ? (
@@ -108,13 +108,13 @@ export function FeedGroupCard({
                 if (e.key === "Enter") onSaveGroupName(group);
                 if (e.key === "Escape") onCancelEditingGroup();
               }}
-              className="h-7 w-40 px-2 text-sm"
+              className="h-7 w-40 bg-background/60 px-2 text-sm"
               aria-label={t("group.add.placeholder")}
               autoFocus={!isMobile}
             />
             <span
               className={cn(
-                "rounded-full bg-muted/75 px-2 py-0.5 text-[11px]",
+                "rounded-full bg-muted/65 px-2 py-0.5 text-[11px]",
                 isCollapsed
                   ? "font-medium text-muted-foreground"
                   : "font-semibold text-muted-foreground",
@@ -144,7 +144,7 @@ export function FeedGroupCard({
             />
             <span
               className={cn(
-                "text-sm",
+                "truncate text-sm",
                 isCollapsed ? "font-medium" : "font-semibold",
               )}
             >
@@ -152,7 +152,7 @@ export function FeedGroupCard({
             </span>
             <span
               className={cn(
-                "rounded-full bg-muted/75 px-2 py-0.5 text-[11px]",
+                "rounded-full bg-muted/65 px-2 py-0.5 text-[11px]",
                 isCollapsed
                   ? "font-medium text-muted-foreground"
                   : "font-semibold text-muted-foreground",
@@ -207,8 +207,9 @@ export function FeedGroupCard({
             <div
               key={feed.id}
               className={cn(
-                "flex items-center justify-between py-2.5 pl-8 pr-3.5 transition-colors hover:bg-background/45 sm:pl-11",
+                "flex items-center justify-between py-2 pl-8 pr-3 transition-colors hover:bg-background/42 sm:pl-10",
                 index < groupFeeds.length - 1 && "border-b border-border/50",
+                feed.suspended && "bg-muted/22",
               )}
             >
               <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -217,7 +218,14 @@ export function FeedGroupCard({
                   className="h-5 w-5"
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-medium">{feed.name}</p>
+                  <p
+                    className={cn(
+                      "truncate text-[13px] font-medium",
+                      feed.suspended && "text-muted-foreground",
+                    )}
+                  >
+                    {feed.name}
+                  </p>
                   <p className="truncate text-[11px] text-muted-foreground">
                     {getDomain(feed.link)}
                   </p>
@@ -248,7 +256,7 @@ export function FeedGroupCard({
                             current === feed.id ? null : feed.id,
                           );
                         }}
-                        className="flex items-center gap-1 rounded-sm text-xs text-destructive"
+                        className="flex items-center gap-1 rounded-sm text-xs font-medium text-destructive"
                       >
                         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                         <span className="hidden max-w-56 truncate font-medium sm:inline">
@@ -265,6 +273,7 @@ export function FeedGroupCard({
                   </Tooltip>
                 )}
                 <span className="hidden text-xs text-muted-foreground sm:inline">
+                  {feed.suspended ? `${t("feeds.status.paused")} · ` : ""}
                   {t("feeds.itemCount", {
                     count: feed.item_count,
                   })}{" "}

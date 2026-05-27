@@ -92,9 +92,6 @@ export function ArticleDetailContent({
 
   useEffect(() => {
     scrollViewportRef.current?.scrollTo({ top: 0 });
-    setScrollProgress(0);
-    setShowScrolledTitle(false);
-    setCanBackTop(false);
     window.requestAnimationFrame(updateScrollState);
   }, [article?.id, selectedArticleId, updateScrollState]);
 
@@ -102,7 +99,7 @@ export function ArticleDetailContent({
     const viewport = scrollViewportRef.current;
     if (!viewport) return;
 
-    updateScrollState();
+    scheduleScrollStateUpdate();
     viewport.addEventListener("scroll", scheduleScrollStateUpdate, {
       passive: true,
     });
@@ -133,11 +130,13 @@ export function ArticleDetailContent({
     scrollViewportRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const articleHtml = useMemo(() => {
-    if (!article) return "";
+  const articleContent = article?.content ?? "";
 
-    return processArticleContent(article.content, safeArticleLink ?? undefined);
-  }, [article?.content, safeArticleLink]);
+  const articleHtml = useMemo(() => {
+    if (!articleContent) return "";
+
+    return processArticleContent(articleContent, safeArticleLink ?? undefined);
+  }, [articleContent, safeArticleLink]);
 
   if (!article) {
     if (selectedArticleId !== null) {
@@ -153,8 +152,19 @@ export function ArticleDetailContent({
 
   return (
     <div className="article-detail-shell relative flex h-full flex-col">
-      <div className="shrink-0 border-b border-border bg-panel">
-        <div className="flex h-[52px] w-full items-center gap-3 px-4 sm:px-5">
+      <div className="shrink-0 border-b border-border/80 bg-panel">
+        <div className="flex h-[48px] w-full items-center gap-2 px-3 sm:h-[52px] sm:px-5">
+          {showCloseButton && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setSelectedArticle(null)}
+              aria-label={t("common.cancel")}
+              className="shrink-0 sm:hidden"
+            >
+              <ChevronLeft className="h-[18px] w-[18px] text-muted-foreground" />
+            </Button>
+          )}
           <div className="min-w-0 flex-1">
             <h2
               className={`truncate text-[15px] font-semibold transition-opacity duration-150 ${
@@ -166,7 +176,7 @@ export function ArticleDetailContent({
             </h2>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 rounded-lg border border-border/55 bg-background/35 p-0.5">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -185,9 +195,9 @@ export function ArticleDetailContent({
               }
             >
               {article.unread ? (
-                <Circle className="h-4 w-4 text-muted-foreground" />
+                <Circle className="h-4 w-4 text-primary" />
               ) : (
-                <CircleCheck className="h-4 w-4 text-primary" />
+                <CircleCheck className="h-4 w-4 text-muted-foreground" />
               )}
             </Button>
             <Button
@@ -248,7 +258,7 @@ export function ArticleDetailContent({
               size="icon-sm"
               onClick={() => setSelectedArticle(null)}
               aria-label={t("common.cancel")}
-              className="shrink-0"
+              className="hidden shrink-0 sm:inline-flex"
             >
               <X className="h-[18px] w-[18px] text-muted-foreground" />
             </Button>
@@ -262,18 +272,18 @@ export function ArticleDetailContent({
       >
         <article
           ref={articleContentRef}
-          className="mx-auto min-w-0 max-w-[760px] px-5 py-10 sm:px-10 sm:py-14"
+          className="mx-auto min-w-0 max-w-[740px] px-5 py-8 sm:px-10 sm:py-12"
         >
-          <div ref={titleBlockRef} className="space-y-4">
-            <h1 className="text-[31px] leading-[1.18] font-semibold tracking-normal sm:text-[38px]">
+          <div ref={titleBlockRef} className="space-y-3">
+            <h1 className="text-[28px] leading-[1.18] font-semibold tracking-normal sm:text-[36px]">
               {article.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-muted-foreground">
               {article.feed_id > 0 ? (
                 <button
                   type="button"
                   onClick={handleOpenFeed}
-                  className="flex max-w-48 items-center gap-1.5 rounded-md px-0 py-1 text-xs font-semibold text-primary transition-colors hover:underline"
+                  className="flex max-w-48 items-center gap-1.5 rounded-md py-1 text-xs font-semibold text-primary transition-colors hover:underline"
                 >
                   {feed && (
                     <FeedFavicon
@@ -309,7 +319,7 @@ export function ArticleDetailContent({
           </div>
 
           <div
-            className="prose prose-neutral mt-9 min-w-0 max-w-none break-words dark:prose-invert"
+            className="prose prose-neutral mt-8 min-w-0 max-w-none break-words dark:prose-invert"
             dangerouslySetInnerHTML={{
               __html: articleHtml,
             }}
@@ -343,7 +353,7 @@ export function ArticleDetailContent({
       </aside>
 
       <div className="shrink-0 border-t border-border bg-panel">
-        <div className="mx-auto flex h-[48px] w-full max-w-[760px] items-center justify-between px-5 sm:px-10">
+        <div className="mx-auto flex h-[44px] w-full max-w-[740px] items-center justify-between px-4 sm:h-[48px] sm:px-10">
           <Button
             variant="ghost"
             size="sm"

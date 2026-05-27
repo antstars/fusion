@@ -29,7 +29,7 @@ export function FeedItem({ feed }: FeedItemProps) {
   return (
     <div
       className={cn(
-        "sidebar-row group flex h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left text-[13px] transition-colors",
+        "sidebar-row group flex h-[30px] w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-[13px] transition-colors",
       )}
       data-selected={isSelected}
     >
@@ -43,7 +43,7 @@ export function FeedItem({ feed }: FeedItemProps) {
           {feed.name}
         </span>
       </button>
-      <div className="ml-2 flex h-6 shrink-0 items-center justify-center">
+      <div className="ml-1 flex h-6 shrink-0 items-center justify-center">
         <span
           className={cn(
             "sidebar-count md:group-hover:hidden md:group-focus-within:hidden",

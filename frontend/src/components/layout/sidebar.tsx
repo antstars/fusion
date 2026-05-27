@@ -13,9 +13,9 @@ export function Sidebar() {
   const isFeedsPage = pathname === "/feeds";
 
   return (
-    <aside className="sidebar-typography flex h-full w-full flex-none flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-none md:w-[248px]">
+    <aside className="sidebar-typography flex h-full w-full flex-none flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-none md:w-[240px]">
       {/* Header */}
-      <div className="flex h-[52px] shrink-0 items-center gap-2 bg-transparent px-3">
+      <div className="flex h-[50px] shrink-0 items-center gap-2 bg-transparent px-3">
         <img
           src="/icon-32.png"
           alt={t("common.fusionLogo")}
@@ -28,7 +28,7 @@ export function Sidebar() {
         </span>
         <button
           type="button"
-          className="flex size-7 items-center justify-center rounded-md border border-sidebar-border bg-sidebar-accent/45 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+          className="flex size-7 items-center justify-center rounded-md border border-sidebar-border bg-sidebar-accent/35 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
           onClick={() => setAddFeedOpen(true)}
           aria-label={t("feed.add.title")}
         >
@@ -37,9 +37,9 @@ export function Sidebar() {
       </div>
 
       {/* Search button */}
-      <div className="bg-transparent px-2 pb-2">
+      <div className="bg-transparent px-2 pb-1.5">
         <button
-          className="flex h-8 w-full items-center justify-between rounded-lg border border-sidebar-border bg-background/55 px-2.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+          className="flex h-8 w-full items-center justify-between rounded-md border border-sidebar-border bg-background/45 px-2.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
           onClick={() => setSearchOpen(true)}
         >
           <div className="flex items-center gap-2">

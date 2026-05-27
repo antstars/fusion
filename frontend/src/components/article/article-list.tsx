@@ -228,6 +228,11 @@ export function ArticleList({ compact = false }: ArticleListProps) {
           <h2 className="truncate text-[17px] font-semibold tracking-normal">
             {title}
           </h2>
+          {!compact && unreadCount > 0 && (
+            <span className="ml-1 shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              {unreadCount}
+            </span>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -245,17 +250,17 @@ export function ArticleList({ compact = false }: ArticleListProps) {
       {/* Article area with filter tabs */}
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden bg-list-panel px-3 py-3 sm:px-4",
-          compact && "px-2.5 py-2.5 sm:px-2.5",
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden bg-list-panel px-3 py-2.5 sm:px-4",
+          compact && "px-2 py-2 sm:px-2",
         )}
       >
-        {/* Filter tabs - hidden when no articles exist */}
-        {!hasNoFeeds && (articles.length > 0 || articleFilter !== "all") && (
+        {!hasNoFeeds && (
           <Tabs
             value={articleFilter}
             onValueChange={(v) => setArticleFilter(v as ArticleFilter)}
+            className="gap-0"
           >
-            <TabsList className="w-full">
+            <TabsList className="h-7 w-full rounded-md border-border/70 bg-muted/55 p-0.5 shadow-none">
               <TabsTrigger value="all">{t("article.filter.all")}</TabsTrigger>
               <TabsTrigger value="unread">{t("article.filter.unread")}</TabsTrigger>
               <TabsTrigger value="starred">
@@ -270,13 +275,13 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
         {/* Article list */}
         <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-1 pr-1">
+          <div className="space-y-0.5 pr-1">
             {isLoading && articles.length === 0 ? (
-              <div className="space-y-2 p-2">
+              <div className="space-y-1.5 p-1">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="h-20 animate-pulse rounded-md bg-muted/60"
+                    className="h-[72px] animate-pulse rounded-md bg-muted/55"
                   />
                 ))}
               </div>

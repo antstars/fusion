@@ -129,9 +129,11 @@ function useHasBeenEnabled(enabled: boolean): boolean {
   const [hasBeenEnabled, setHasBeenEnabled] = useState(enabled);
 
   useEffect(() => {
-    if (enabled) {
-      setHasBeenEnabled(true);
-    }
+    if (!enabled) return;
+
+    const frame = window.requestAnimationFrame(() => setHasBeenEnabled(true));
+
+    return () => window.cancelAnimationFrame(frame);
   }, [enabled]);
 
   return hasBeenEnabled;
