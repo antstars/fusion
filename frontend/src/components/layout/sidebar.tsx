@@ -4,6 +4,7 @@ import { FeedList } from "@/components/feed/feed-list";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store";
+import { LiquidGlassPanel } from "@/components/ui/liquid-glass-panel";
 
 export function Sidebar() {
   const { t } = useI18n();
@@ -13,7 +14,11 @@ export function Sidebar() {
   const isFeedsPage = pathname === "/feeds";
 
   return (
-    <aside className="sidebar-typography flex h-full w-full flex-none flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-none md:w-[248px]">
+    <LiquidGlassPanel
+      className="h-full w-full flex-none border-r border-sidebar-border text-sidebar-foreground shadow-none md:w-[248px]"
+      contentClassName="sidebar-typography flex flex-col overflow-hidden"
+      cornerRadius={0}
+    >
       {/* Header */}
       <div className="flex h-[52px] shrink-0 items-center gap-2 bg-transparent px-3">
         <img
@@ -75,6 +80,6 @@ export function Sidebar() {
           <span>{t("sidebar.settings")}</span>
         </button>
       </div>
-    </aside>
+    </LiquidGlassPanel>
   );
 }

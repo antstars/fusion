@@ -36,6 +36,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "dompurify": "^3.3.1",
+    "liquid-glass-react": "^1.1.1",
     "lucide-react": "^0.575.0",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",

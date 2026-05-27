@@ -251,6 +251,56 @@
   );
 }
 
+.fusion-liquid-glass-panel {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  background: var(--glass-bg);
+}
+
+.fusion-liquid-glass {
+  pointer-events: none;
+  z-index: 0;
+}
+
+.fusion-liquid-glass-panel > :not(.fusion-liquid-glass) {
+  pointer-events: none;
+}
+
+.fusion-liquid-glass,
+.fusion-liquid-glass > .glass,
+.fusion-liquid-glass .glass > div {
+  display: flex !important;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.fusion-liquid-glass > .glass {
+  align-items: stretch !important;
+  gap: 0 !important;
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.fusion-liquid-glass .glass > div {
+  color: inherit !important;
+  font: inherit !important;
+  text-shadow: none !important;
+}
+
+.fusion-liquid-glass-content {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
 @supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
   .glass-panel,
   .glass-panel-strong,
