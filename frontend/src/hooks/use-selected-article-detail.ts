@@ -22,6 +22,9 @@ import type { Item } from "@/lib/api";
 import { toSafeExternalUrl } from "@/lib/safe-url";
 import { useArticleNavigation } from "./use-keyboard";
 import { useUrlState } from "./use-url-state";
+import { useArticleSessionStore } from "@/store/article-session";
+
+const autoMarkReadDelayMs = 800;
 
 export function useSelectedArticleDetail() {
   const {
@@ -36,6 +39,7 @@ export function useSelectedArticleDetail() {
   const isStarredMode = articleFilter === "starred";
   const isReadLaterMode = articleFilter === "read-later";
   const isSavedMode = isStarredMode || isReadLaterMode;
+  const unreadOverrides = useArticleSessionStore((state) => state.unreadOverrides);
 
   const itemsQuery = useItems({
     feedId: selectedFeedId,
@@ -63,9 +67,11 @@ export function useSelectedArticleDetail() {
     if (articleFilter !== "unread") return sourceArticles;
 
     return sourceArticles.filter(
-      (item) => item.unread || item.id === selectedArticleId,
+      (item) =>
+        (unreadOverrides[item.id] ?? item.unread) ||
+        item.id === selectedArticleId,
     );
-  }, [articleFilter, selectedArticleId, sourceArticles]);
+  }, [articleFilter, selectedArticleId, sourceArticles, unreadOverrides]);
 
   const markRead = useMarkItemsRead({ keepReadItemsInUnreadLists: true });
   const markUnread = useMarkItemsUnread();
@@ -97,25 +103,38 @@ export function useSelectedArticleDetail() {
       ? (fetchedArticle ?? storeArticle)
       : isReadLaterMode
         ? (fetchedArticle ?? storeArticle)
-      : (storeArticle ?? fetchedArticle)) ?? null;
+        : (storeArticle ?? fetchedArticle)) ?? null;
+  const displayArticle: Item | null = article
+    ? {
+        ...article,
+        unread: unreadOverrides[article.id] ?? article.unread,
+      }
+    : null;
   const canToggleRead =
-    article !== null &&
-    article.id > 0 &&
+    displayArticle !== null &&
+    displayArticle.id > 0 &&
     (!isSavedMode || fetchedArticle !== undefined);
-  const feed = article ? getFeedById(article.feed_id) : null;
-  const bookmark = article ? getBookmarkByItemId(article.id) : null;
-  const starred = article ? isItemStarred(article.id) : false;
-  const readLaterItem = article ? getReadLaterByItemId(article.id) : null;
-  const readLater = article ? isItemReadLater(article.id) : false;
-  const safeArticleLink = article ? toSafeExternalUrl(article.link) : null;
+  const feed = displayArticle ? getFeedById(displayArticle.feed_id) : null;
+  const bookmark = displayArticle ? getBookmarkByItemId(displayArticle.id) : null;
+  const starred = displayArticle ? isItemStarred(displayArticle.id) : false;
+  const readLaterItem = displayArticle
+    ? getReadLaterByItemId(displayArticle.id)
+    : null;
+  const readLater = displayArticle ? isItemReadLater(displayArticle.id) : false;
+  const safeArticleLink = displayArticle
+    ? toSafeExternalUrl(displayArticle.link)
+    : null;
+  const displayArticleId = displayArticle?.id ?? null;
+  const displayArticleUnread = displayArticle?.unread ?? false;
 
   const handleToggleRead = async () => {
-    if (!article || !canToggleRead) return;
+    if (!displayArticle || !canToggleRead) return;
     try {
-      if (article.unread) {
-        await markRead.mutateAsync([article.id]);
+      if (displayArticle.unread) {
+        await markRead.mutateAsync([displayArticle.id]);
       } else {
-        await markUnread.mutateAsync([article.id]);
+        autoReadItemIdsRef.current.add(displayArticle.id);
+        await markUnread.mutateAsync([displayArticle.id]);
       }
     } catch (error) {
       console.error("Failed to toggle read status:", error);
@@ -123,15 +142,15 @@ export function useSelectedArticleDetail() {
   };
 
   const handleToggleStar = async () => {
-    if (!article) return;
+    if (!displayArticle) return;
     try {
       if (starred) {
-        const bookmark = getBookmarkByItemId(article.id);
+        const bookmark = getBookmarkByItemId(displayArticle.id);
         if (bookmark) {
           await deleteBookmark.mutateAsync(bookmark.id);
         }
       } else {
-        await createBookmark.mutateAsync(article);
+        await createBookmark.mutateAsync(displayArticle);
       }
     } catch (error) {
       console.error("Failed to toggle star:", error);
@@ -139,15 +158,15 @@ export function useSelectedArticleDetail() {
   };
 
   const handleToggleReadLater = async () => {
-    if (!article) return;
+    if (!displayArticle) return;
     try {
       if (readLater) {
-        const item = getReadLaterByItemId(article.id);
+        const item = getReadLaterByItemId(displayArticle.id);
         if (item) {
           await deleteReadLaterItem.mutateAsync(item.id);
         }
       } else {
-        await createReadLaterItem.mutateAsync(article);
+        await createReadLaterItem.mutateAsync(displayArticle);
       }
     } catch (error) {
       console.error("Failed to toggle read later:", error);
@@ -160,20 +179,27 @@ export function useSelectedArticleDetail() {
   };
 
   const handleOpenFeed = () => {
-    if (!article || article.feed_id <= 0) return;
-    setSelectedFeed(article.feed_id);
+    if (!displayArticle || displayArticle.feed_id <= 0) return;
+    setSelectedFeed(displayArticle.feed_id);
   };
 
   useEffect(() => {
-    if (!article || !canToggleRead || !article.unread) return;
-    if (autoReadItemIdsRef.current.has(article.id)) return;
+    if (displayArticleId === null || !canToggleRead || !displayArticleUnread) {
+      return;
+    }
+    if (autoReadItemIdsRef.current.has(displayArticleId)) return;
 
-    autoReadItemIdsRef.current.add(article.id);
-    void markRead.mutateAsync([article.id]).catch((error) => {
-      autoReadItemIdsRef.current.delete(article.id);
-      console.error("Failed to mark article as read:", error);
-    });
-  }, [article, canToggleRead, markRead]);
+    const articleId = displayArticleId;
+    const timer = window.setTimeout(() => {
+      autoReadItemIdsRef.current.add(articleId);
+      void markRead.mutateAsync([articleId]).catch((error) => {
+        autoReadItemIdsRef.current.delete(articleId);
+        console.error("Failed to mark article as read:", error);
+      });
+    }, autoMarkReadDelayMs);
+
+    return () => window.clearTimeout(timer);
+  }, [canToggleRead, displayArticleId, displayArticleUnread, markRead]);
 
   const { goToNext, goToPrevious, hasNext, hasPrevious } =
     useArticleNavigation(articleIds, {
@@ -188,7 +214,7 @@ export function useSelectedArticleDetail() {
     });
 
   return {
-    article,
+    article: displayArticle,
     bookmark,
     canToggleRead,
     feed,

@@ -1,8 +1,11 @@
 import { create } from "zustand";
 
 interface ArticleSessionState {
+  unreadOverrides: Record<number, boolean>;
   starredOverrides: Record<number, boolean>;
   readLaterOverrides: Record<number, boolean>;
+  setUnreadOverride: (itemId: number, unread: boolean) => void;
+  clearUnreadOverride: (itemId: number) => void;
   setStarredOverride: (itemId: number, starred: boolean) => void;
   clearStarredOverride: (itemId: number) => void;
   setReadLaterOverride: (itemId: number, readLater: boolean) => void;
@@ -10,8 +13,22 @@ interface ArticleSessionState {
 }
 
 export const useArticleSessionStore = create<ArticleSessionState>((set) => ({
+  unreadOverrides: {},
   starredOverrides: {},
   readLaterOverrides: {},
+  setUnreadOverride: (itemId, unread) =>
+    set((state) => ({
+      unreadOverrides: {
+        ...state.unreadOverrides,
+        [itemId]: unread,
+      },
+    })),
+  clearUnreadOverride: (itemId) =>
+    set((state) => {
+      const next = { ...state.unreadOverrides };
+      delete next[itemId];
+      return { unreadOverrides: next };
+    }),
   setStarredOverride: (itemId, starred) =>
     set((state) => ({
       starredOverrides: {

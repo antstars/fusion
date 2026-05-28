@@ -16,6 +16,7 @@ import {
   type NormalizedItemFilters,
 } from "./keys";
 import { usePreferencesStore } from "@/store";
+import { useArticleSessionStore } from "@/store/article-session";
 
 type ItemListResponse = Awaited<ReturnType<typeof itemAPI.list>>;
 type ItemsInfiniteData = InfiniteData<ItemListResponse, number>;
@@ -23,6 +24,7 @@ type ItemsMutationContext = {
   prevItemLists: Array<[readonly unknown[], ItemsInfiniteData | undefined]>;
   prevItemDetails: Array<readonly [number, Item | undefined]>;
   prevFeeds: Feed[] | undefined;
+  prevUnreadOverrides: Record<number, boolean | undefined>;
 };
 interface SetItemsReadStateOptions {
   keepReadItemsInUnreadLists?: boolean;
@@ -96,6 +98,10 @@ function snapshotItemsMutationState(
         [id, qc.getQueryData<Item>(queryKeys.items.detail(id))] as const,
     ),
     prevFeeds: qc.getQueryData<Feed[]>(queryKeys.feeds.list()),
+    prevUnreadOverrides: (() => {
+      const overrides = useArticleSessionStore.getState().unreadOverrides;
+      return Object.fromEntries(ids.map((id) => [id, overrides[id]]));
+    })(),
   };
 }
 
@@ -210,6 +216,7 @@ function applyOptimisticItemReadState(
 function rollbackItemsMutation(
   qc: QueryClient,
   context: ItemsMutationContext | undefined,
+  targetUnread: boolean,
 ) {
   if (!context) return;
 
@@ -224,6 +231,22 @@ function rollbackItemsMutation(
   if (context.prevFeeds) {
     qc.setQueryData(queryKeys.feeds.list(), context.prevFeeds);
   }
+
+  useArticleSessionStore.setState((state) => {
+    const unreadOverrides = { ...state.unreadOverrides };
+    for (const [id, unread] of Object.entries(context.prevUnreadOverrides)) {
+      const itemId = Number(id);
+      if (unreadOverrides[itemId] !== targetUnread) {
+        continue;
+      }
+      if (unread === undefined) {
+        delete unreadOverrides[itemId];
+      } else {
+        unreadOverrides[itemId] = unread;
+      }
+    }
+    return { unreadOverrides };
+  });
 }
 
 function useSetItemsReadState(
@@ -231,6 +254,7 @@ function useSetItemsReadState(
   options: SetItemsReadStateOptions = {},
 ) {
   const qc = useQueryClient();
+  const setUnreadOverride = useArticleSessionStore((s) => s.setUnreadOverride);
 
   return useMutation({
     mutationFn: async (ids: number[]) => {
@@ -243,12 +267,10 @@ function useSetItemsReadState(
       return ids;
     },
     onMutate: async (ids) => {
-      await Promise.all([
-        qc.cancelQueries({ queryKey: queryKeys.items.all }),
-        qc.cancelQueries({ queryKey: queryKeys.feeds.all }),
-      ]);
-
       const context = snapshotItemsMutationState(qc, ids);
+      for (const id of ids) {
+        setUnreadOverride(id, targetUnread);
+      }
       applyOptimisticItemReadState(
         qc,
         ids,
@@ -259,7 +281,9 @@ function useSetItemsReadState(
       return context;
     },
     onError: (_error, _ids, context) => {
-      rollbackItemsMutation(qc, context);
+      rollbackItemsMutation(qc, context, targetUnread);
+      void qc.invalidateQueries({ queryKey: queryKeys.items.all });
+      void qc.invalidateQueries({ queryKey: queryKeys.feeds.all });
     },
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: queryKeys.feeds.all });

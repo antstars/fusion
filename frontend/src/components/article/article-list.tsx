@@ -30,6 +30,7 @@ import { getFaviconUrl } from "@/lib/api/favicon";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/store";
+import { useArticleSessionStore } from "@/store/article-session";
 import type { Item } from "@/lib/api";
 
 interface ArticleListProps {
@@ -52,6 +53,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     Record<number, boolean>
   >({});
   const articlePageSize = usePreferencesStore((state) => state.articlePageSize);
+  const unreadOverrides = useArticleSessionStore((state) => state.unreadOverrides);
 
   const isStarredMode = articleFilter === "starred";
   const isReadLaterMode = articleFilter === "read-later";
@@ -94,11 +96,16 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     if (articleFilter !== "unread") return sourceArticles;
 
     return sourceArticles.filter(
-      (article) => article.unread || article.id === selectedArticleId,
+      (article) =>
+        (unreadOverrides[article.id] ?? article.unread) ||
+        article.id === selectedArticleId,
     );
-  }, [articleFilter, selectedArticleId, sourceArticles]);
+  }, [articleFilter, selectedArticleId, sourceArticles, unreadOverrides]);
   const getArticleUnread = useCallback(
     (article: Item) => {
+      const unreadOverride = unreadOverrides[article.id];
+      if (unreadOverride !== undefined) return unreadOverride;
+
       if (!isSavedMode) return article.unread;
 
       const override = starredUnreadOverrides[article.id];
@@ -113,7 +120,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
       return article.unread;
     },
-    [isSavedMode, queryClient, starredUnreadOverrides],
+    [isSavedMode, queryClient, starredUnreadOverrides, unreadOverrides],
   );
 
   const displayArticles = useMemo(

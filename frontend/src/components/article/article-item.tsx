@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { cn, formatDate, extractSummary } from "@/lib/utils";
 import type { Item } from "@/lib/api";
 import { FeedFavicon } from "@/components/feed/feed-favicon";
@@ -20,6 +20,10 @@ function ArticleItemComponent({
   feedFaviconUrl,
   compact = false,
 }: ArticleItemProps) {
+  const summary = useMemo(() => extractSummary(article.content, 150), [
+    article.content,
+  ]);
+
   return (
     <div
       role="button"
@@ -71,7 +75,7 @@ function ArticleItemComponent({
             compact && "line-clamp-1",
           )}
         >
-          {extractSummary(article.content, 150)}
+          {summary}
         </p>
       </div>
     </div>
