@@ -138,7 +138,14 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
   useEffect(() => {
     if (articleFilter !== "unread" || isSavedMode) return;
-    if (!itemsQuery.hasNextPage || itemsQuery.isFetchingNextPage) return;
+    if (
+      !itemsQuery.hasNextPage ||
+      itemsQuery.isFetching ||
+      itemsQuery.isRefetching ||
+      itemsQuery.isFetchingNextPage
+    ) {
+      return;
+    }
     if (unreadDisplayCount >= articlePageSize) return;
     if (itemsQuery.data && unreadDisplayCount === 0) {
       const total = itemsQuery.data.pages.at(-1)?.total ?? 0;
@@ -153,7 +160,9 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     isSavedMode,
     itemsQuery.data,
     itemsQuery.hasNextPage,
+    itemsQuery.isFetching,
     itemsQuery.isFetchingNextPage,
+    itemsQuery.isRefetching,
     unreadDisplayCount,
   ]);
 

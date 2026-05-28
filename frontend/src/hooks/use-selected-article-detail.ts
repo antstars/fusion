@@ -22,7 +22,6 @@ import type { Item } from "@/lib/api";
 import { toSafeExternalUrl } from "@/lib/safe-url";
 import { useArticleNavigation } from "./use-keyboard";
 import { useUrlState } from "./use-url-state";
-import { usePreferencesStore } from "@/store";
 
 export function useSelectedArticleDetail() {
   const {
@@ -37,14 +36,12 @@ export function useSelectedArticleDetail() {
   const isStarredMode = articleFilter === "starred";
   const isReadLaterMode = articleFilter === "read-later";
   const isSavedMode = isStarredMode || isReadLaterMode;
-  const articlePageSize = usePreferencesStore((state) => state.articlePageSize);
 
   const itemsQuery = useItems({
     feedId: selectedFeedId,
     groupId: selectedGroupId,
     unread: articleFilter === "unread" ? true : undefined,
   });
-  const fetchNextPage = itemsQuery.fetchNextPage;
   const articles = useMemo(
     () => itemsQuery.data?.pages.flatMap((p) => p.data) ?? [],
     [itemsQuery.data],
@@ -81,7 +78,6 @@ export function useSelectedArticleDetail() {
   const deleteReadLaterItem = useDeleteReadLaterItem();
 
   const articleIds = listArticles.map((article) => article.id);
-  const unreadListCount = listArticles.filter((item) => item.unread).length;
 
   const storeArticle = selectedArticleId
     ? (listArticles.find((item) => item.id === selectedArticleId) ?? null)
@@ -167,27 +163,6 @@ export function useSelectedArticleDetail() {
     if (!article || article.feed_id <= 0) return;
     setSelectedFeed(article.feed_id);
   };
-
-  useEffect(() => {
-    if (articleFilter !== "unread" || isSavedMode) return;
-    if (!itemsQuery.hasNextPage || itemsQuery.isFetchingNextPage) return;
-    if (unreadListCount >= articlePageSize) return;
-    if (itemsQuery.data && unreadListCount === 0) {
-      const total = itemsQuery.data.pages.at(-1)?.total ?? 0;
-      if (total === 0) return;
-    }
-
-    void fetchNextPage();
-  }, [
-    articleFilter,
-    articlePageSize,
-    fetchNextPage,
-    isSavedMode,
-    itemsQuery.data,
-    itemsQuery.hasNextPage,
-    itemsQuery.isFetchingNextPage,
-    unreadListCount,
-  ]);
 
   useEffect(() => {
     if (!article || !canToggleRead || !article.unread) return;
