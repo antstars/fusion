@@ -64,26 +64,39 @@ async function request<T>(
   return JSON.parse(body) as T;
 }
 
-async function get<T>(endpoint: string): Promise<T> {
-  return request<T>(endpoint, { method: "GET" });
+async function get<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  return request<T>(endpoint, { ...options, method: "GET" });
 }
 
-async function post<T>(endpoint: string, data?: unknown): Promise<T> {
+async function post<T>(
+  endpoint: string,
+  data?: unknown,
+  options: RequestInit = {},
+): Promise<T> {
   return request<T>(endpoint, {
+    ...options,
     method: "POST",
     body: data ? JSON.stringify(data) : undefined,
   });
 }
 
-async function patch<T>(endpoint: string, data?: unknown): Promise<T> {
+async function patch<T>(
+  endpoint: string,
+  data?: unknown,
+  options: RequestInit = {},
+): Promise<T> {
   return request<T>(endpoint, {
+    ...options,
     method: "PATCH",
     body: data ? JSON.stringify(data) : undefined,
   });
 }
 
-async function del<T>(endpoint: string): Promise<T> {
-  return request<T>(endpoint, { method: "DELETE" });
+async function del<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  return request<T>(endpoint, { ...options, method: "DELETE" });
 }
 
 export const api = {

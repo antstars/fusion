@@ -75,7 +75,8 @@ export function useSelectedArticleDetail() {
 
   const markRead = useMarkItemsRead({ keepReadItemsInUnreadLists: true });
   const markUnread = useMarkItemsUnread();
-  const autoReadItemIdsRef = useRef(new Set<number>());
+  const pendingAutoReadItemIdsRef = useRef(new Set<number>());
+  const manualUnreadHoldRef = useRef<number | null>(null);
   const { isItemStarred, getBookmarkByItemId } = useBookmarkLookup();
   const { isItemReadLater, getReadLaterByItemId } = useReadLaterLookup();
   const createBookmark = useCreateBookmark();
@@ -133,7 +134,7 @@ export function useSelectedArticleDetail() {
       if (displayArticle.unread) {
         await markRead.mutateAsync([displayArticle.id]);
       } else {
-        autoReadItemIdsRef.current.add(displayArticle.id);
+        manualUnreadHoldRef.current = displayArticle.id;
         await markUnread.mutateAsync([displayArticle.id]);
       }
     } catch (error) {
@@ -184,17 +185,28 @@ export function useSelectedArticleDetail() {
   };
 
   useEffect(() => {
+    if (
+      manualUnreadHoldRef.current !== null &&
+      manualUnreadHoldRef.current !== displayArticleId
+    ) {
+      manualUnreadHoldRef.current = null;
+    }
+  }, [displayArticleId]);
+
+  useEffect(() => {
     if (displayArticleId === null || !canToggleRead || !displayArticleUnread) {
       return;
     }
-    if (autoReadItemIdsRef.current.has(displayArticleId)) return;
+    if (manualUnreadHoldRef.current === displayArticleId) return;
+    if (pendingAutoReadItemIdsRef.current.has(displayArticleId)) return;
 
     const articleId = displayArticleId;
     const timer = window.setTimeout(() => {
-      autoReadItemIdsRef.current.add(articleId);
+      pendingAutoReadItemIdsRef.current.add(articleId);
       void markRead.mutateAsync([articleId]).catch((error) => {
-        autoReadItemIdsRef.current.delete(articleId);
         console.error("Failed to mark article as read:", error);
+      }).finally(() => {
+        pendingAutoReadItemIdsRef.current.delete(articleId);
       });
     }, autoMarkReadDelayMs);
 

@@ -6,6 +6,7 @@ interface ArticleSessionState {
   readLaterOverrides: Record<number, boolean>;
   setUnreadOverride: (itemId: number, unread: boolean) => void;
   clearUnreadOverride: (itemId: number) => void;
+  clearUnreadOverrides: (itemIds: number[]) => void;
   setStarredOverride: (itemId: number, starred: boolean) => void;
   clearStarredOverride: (itemId: number) => void;
   setReadLaterOverride: (itemId: number, readLater: boolean) => void;
@@ -27,6 +28,14 @@ export const useArticleSessionStore = create<ArticleSessionState>((set) => ({
     set((state) => {
       const next = { ...state.unreadOverrides };
       delete next[itemId];
+      return { unreadOverrides: next };
+    }),
+  clearUnreadOverrides: (itemIds) =>
+    set((state) => {
+      const next = { ...state.unreadOverrides };
+      for (const itemId of itemIds) {
+        delete next[itemId];
+      }
       return { unreadOverrides: next };
     }),
   setStarredOverride: (itemId, starred) =>

@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   queryOptions,
   useMutation,
@@ -11,21 +11,46 @@ import { queryKeys } from "./keys";
 const refreshJobPollIntervalMs = 1000;
 const refreshJobPollTimeoutMs = 30 * 60 * 1000;
 
-function sleep(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
+function throwIfAborted(signal?: AbortSignal) {
+  if (signal?.aborted) {
+    throw new DOMException("Refresh polling aborted", "AbortError");
+  }
 }
 
-async function waitForRefreshJob(job: RefreshJob): Promise<RefreshJob> {
+function sleep(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    throwIfAborted(signal);
+
+    const timer = window.setTimeout(() => {
+      signal?.removeEventListener("abort", handleAbort);
+      resolve();
+    }, ms);
+
+    const handleAbort = () => {
+      window.clearTimeout(timer);
+      reject(new DOMException("Refresh polling aborted", "AbortError"));
+    };
+
+    signal?.addEventListener("abort", handleAbort, { once: true });
+  });
+}
+
+async function waitForRefreshJob(
+  job: RefreshJob,
+  signal?: AbortSignal,
+): Promise<RefreshJob> {
   const deadline = Date.now() + refreshJobPollTimeoutMs;
   let current = job;
 
   while (current.status === "running") {
+    throwIfAborted(signal);
+
     if (Date.now() >= deadline) {
       throw new Error("refresh timed out");
     }
 
-    await sleep(refreshJobPollIntervalMs);
-    const res = await feedAPI.getRefreshJob(current.id);
+    await sleep(refreshJobPollIntervalMs, signal);
+    const res = await feedAPI.getRefreshJob(current.id, { signal });
     if (!res.data) {
       throw new Error("refresh job not found");
     }
@@ -157,13 +182,33 @@ export function useDeleteFeed() {
 
 export function useRefreshFeeds() {
   const qc = useQueryClient();
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    [],
+  );
+
   return useMutation({
     mutationFn: async () => {
-      const res = await feedAPI.refresh();
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const res = await feedAPI.refresh({ signal: controller.signal });
       if (!res.data) {
         throw new Error("refresh job not found");
       }
-      return waitForRefreshJob(res.data);
+
+      try {
+        return await waitForRefreshJob(res.data, controller.signal);
+      } finally {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
+      }
     },
     onSuccess: async () => {
       await Promise.all([
@@ -176,13 +221,33 @@ export function useRefreshFeeds() {
 
 export function useRefreshFeed() {
   const qc = useQueryClient();
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    [],
+  );
+
   return useMutation({
     mutationFn: async (id: number) => {
-      const res = await feedAPI.refreshOne(id);
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const res = await feedAPI.refreshOne(id, { signal: controller.signal });
       if (!res.data) {
         throw new Error("refresh job not found");
       }
-      return waitForRefreshJob(res.data);
+
+      try {
+        return await waitForRefreshJob(res.data, controller.signal);
+      } finally {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
+      }
     },
     onSuccess: async () => {
       await Promise.all([

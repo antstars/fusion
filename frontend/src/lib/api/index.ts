@@ -75,13 +75,14 @@ export const feedAPI = {
   validate: (data: ValidateFeedRequest) =>
     api.post<APIResponse<ValidateFeedResponse>>("/feeds/validate", data),
 
-  refresh: () => api.post<APIResponse<RefreshJob>>("/feeds/refresh"),
+  refresh: (options?: RequestInit) =>
+    api.post<APIResponse<RefreshJob>>("/feeds/refresh", undefined, options),
 
-  refreshOne: (id: number) =>
-    api.post<APIResponse<RefreshJob>>(`/feeds/${id}/refresh`),
+  refreshOne: (id: number, options?: RequestInit) =>
+    api.post<APIResponse<RefreshJob>>(`/feeds/${id}/refresh`, undefined, options),
 
-  getRefreshJob: (id: string) =>
-    api.get<APIResponse<RefreshJob>>(`/feeds/refresh-jobs/${id}`),
+  getRefreshJob: (id: string, options?: RequestInit) =>
+    api.get<APIResponse<RefreshJob>>(`/feeds/refresh-jobs/${id}`, options),
 
   batchCreate: (data: BatchCreateFeedsRequest) =>
     api.post<APIResponse<BatchCreateFeedsResponse>>("/feeds/batch", data),

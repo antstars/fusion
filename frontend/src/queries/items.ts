@@ -255,6 +255,9 @@ function useSetItemsReadState(
 ) {
   const qc = useQueryClient();
   const setUnreadOverride = useArticleSessionStore((s) => s.setUnreadOverride);
+  const clearUnreadOverrides = useArticleSessionStore(
+    (s) => s.clearUnreadOverrides,
+  );
 
   return useMutation({
     mutationFn: async (ids: number[]) => {
@@ -284,6 +287,9 @@ function useSetItemsReadState(
       rollbackItemsMutation(qc, context, targetUnread);
       void qc.invalidateQueries({ queryKey: queryKeys.items.all });
       void qc.invalidateQueries({ queryKey: queryKeys.feeds.all });
+    },
+    onSuccess: (ids) => {
+      clearUnreadOverrides(ids);
     },
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: queryKeys.feeds.all });

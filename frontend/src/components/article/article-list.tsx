@@ -297,7 +297,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="h-[72px] animate-pulse rounded-md bg-muted/55"
+                    className="article-skeleton h-[72px] rounded-md"
                   />
                 ))}
               </div>
