@@ -37,8 +37,7 @@ type Handler struct {
 	limiter   *loginLimiter
 	lastSweep int64
 
-	refreshAllMu      sync.Mutex
-	refreshAllRunning bool
+	refreshJobs *refreshJobStore
 }
 
 func New(store *store.Store, config *config.Config, puller interface {
@@ -81,6 +80,7 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 		puller:               puller,
 		sessions:             make(map[string]int64),
 		limiter:              newLoginLimiter(config.LoginRateLimit, config.LoginWindow, config.LoginBlock),
+		refreshJobs:          newRefreshJobStore(),
 	}
 
 	if h.allowAnonAPI {
@@ -153,6 +153,7 @@ func (h *Handler) SetupRouter() *gin.Engine {
 			auth.POST("/feeds", h.createFeed)
 			auth.POST("/feeds/batch", h.batchCreateFeeds)
 			auth.POST("/feeds/refresh", h.refreshAllFeeds)
+			auth.GET("/feeds/refresh-jobs/:id", h.getRefreshJob)
 			auth.GET("/feeds/:id", h.getFeed)
 			auth.PATCH("/feeds/:id", h.updateFeed)
 			auth.DELETE("/feeds/:id", h.deleteFeed)
@@ -230,6 +231,10 @@ func (h *Handler) cacheMiddleware() gin.HandlerFunc {
 }
 
 func (h *Handler) isCacheablePath(path string) bool {
+	if path == "/api/feeds/refresh-jobs" || strings.HasPrefix(path, "/api/feeds/refresh-jobs/") {
+		return false
+	}
+
 	for _, prefix := range []string{"/api/groups", "/api/feeds", "/api/items", "/api/bookmarks", "/api/read-later", "/api/search"} {
 		if path == prefix || strings.HasPrefix(path, prefix+"/") {
 			return true

@@ -311,12 +311,38 @@ paths:
   /feeds/refresh:
     post:
       tags: [Feeds]
-      summary: Trigger async refresh for all non-suspended feeds
+      summary: Start async refresh for all non-suspended feeds
       responses:
         "202":
-          description: Refresh accepted
+          description: Refresh job accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshJobEnvelope"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /feeds/refresh-jobs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Feeds]
+      summary: Get refresh job status
+      responses:
+        "200":
+          description: Refresh job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshJobEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /feeds/{id}:
     parameters:
@@ -384,10 +410,14 @@ paths:
       - $ref: "#/components/parameters/IdPath"
     post:
       tags: [Feeds]
-      summary: Trigger async refresh for one feed
+      summary: Start async refresh for one feed
       responses:
         "202":
-          description: Refresh accepted
+          description: Refresh job accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshJobEnvelope"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1014,6 +1044,37 @@ components:
             $ref: "#/components/schemas/Feed"
         total:
           type: integer
+
+    RefreshJob:
+      type: object
+      required: [id, scope, status, started_at]
+      properties:
+        id:
+          type: string
+        scope:
+          type: string
+          enum: [all, feed]
+        feed_id:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [running, completed, failed]
+        started_at:
+          type: integer
+          format: int64
+        finished_at:
+          type: integer
+          format: int64
+        error:
+          type: string
+
+    RefreshJobEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/RefreshJob"
 
     CreateFeedRequest:
       type: object

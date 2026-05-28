@@ -143,8 +143,9 @@ function FeedsPage() {
 
   const handleRefreshAll = async () => {
     try {
+      toast.info(t("feeds.toast.refreshing"));
       await refreshFeedsMutation.mutateAsync();
-      toast.success(t("feeds.toast.refreshing"));
+      toast.success(t("feeds.toast.refreshed"));
     } catch {
       toast.error(t("feeds.toast.refreshFailed"));
     }
@@ -154,8 +155,9 @@ function FeedsPage() {
     setRefreshingFeedId(feed.id);
 
     try {
+      toast.info(t("feed.toast.refreshing"));
       await refreshFeedMutation.mutateAsync(feed.id);
-      toast.success(t("feed.toast.refreshing"));
+      toast.success(t("feed.toast.refreshed"));
     } catch {
       toast.error(t("feed.toast.refreshFailed"));
     } finally {

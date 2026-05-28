@@ -317,59 +317,56 @@ func (h *Handler) refreshFeed(c *gin.Context) {
 		return
 	}
 
+	job, shouldStart := h.refreshJobs.startFeed(id)
+	c.JSON(http.StatusAccepted, gin.H{"data": job})
+	if !shouldStart {
+		return
+	}
+
 	// Trigger refresh in background.
 	// Do not use the request context here: once the handler returns, it may be cancelled.
 	refreshTimeout := time.Duration(h.config.PullTimeout) * time.Second
-	go func(feedID int64) {
+	go func(jobID string, feedID int64) {
 		ctx, cancel := context.WithTimeout(context.Background(), refreshTimeout)
 		defer cancel()
-		if err := h.puller.RefreshFeed(ctx, feedID); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			slog.Warn("refresh feed failed", "feed_id", feedID, "error", err)
+		refreshErr := h.puller.RefreshFeed(ctx, feedID)
+		if refreshErr != nil && !errors.Is(refreshErr, context.Canceled) && !errors.Is(refreshErr, context.DeadlineExceeded) {
+			slog.Warn("refresh feed failed", "feed_id", feedID, "error", refreshErr)
 		}
 		h.invalidateReadCache(context.Background())
-	}(id)
-
-	c.Status(http.StatusAccepted)
+		h.refreshJobs.finish(jobID, refreshErr)
+	}(job.ID, id)
 }
 
 func (h *Handler) refreshAllFeeds(c *gin.Context) {
-	if !h.tryStartRefreshAll() {
-		c.Status(http.StatusAccepted)
+	job, shouldStart := h.refreshJobs.startAll()
+	c.JSON(http.StatusAccepted, gin.H{"data": job})
+	if !shouldStart {
 		return
 	}
 
 	// Run in background so the HTTP response returns immediately.
-	go func() {
-		defer h.finishRefreshAll()
-
+	go func(jobID string) {
 		ctx, cancel := context.WithTimeout(context.Background(), refreshAllTimeout)
 		defer cancel()
 
-		if count, err := h.puller.RefreshAll(ctx); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			slog.Warn("refresh all feeds failed", "refreshed", count, "error", err)
+		_, refreshErr := h.puller.RefreshAll(ctx)
+		if refreshErr != nil && !errors.Is(refreshErr, context.Canceled) && !errors.Is(refreshErr, context.DeadlineExceeded) {
+			slog.Warn("refresh all feeds failed", "error", refreshErr)
 		}
 		h.invalidateReadCache(context.Background())
-	}()
-
-	c.Status(http.StatusAccepted)
+		h.refreshJobs.finish(jobID, refreshErr)
+	}(job.ID)
 }
 
-func (h *Handler) tryStartRefreshAll() bool {
-	h.refreshAllMu.Lock()
-	defer h.refreshAllMu.Unlock()
-
-	if h.refreshAllRunning {
-		return false
+func (h *Handler) getRefreshJob(c *gin.Context) {
+	job, ok := h.refreshJobs.get(c.Param("id"))
+	if !ok {
+		notFoundError(c, "refresh job")
+		return
 	}
 
-	h.refreshAllRunning = true
-	return true
-}
-
-func (h *Handler) finishRefreshAll() {
-	h.refreshAllMu.Lock()
-	h.refreshAllRunning = false
-	h.refreshAllMu.Unlock()
+	dataResponse(c, job)
 }
 
 func (h *Handler) batchCreateFeeds(c *gin.Context) {

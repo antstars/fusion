@@ -36,6 +36,19 @@ export interface FeedFetchState {
   consecutive_failures: number;
 }
 
+export type RefreshJobStatus = "running" | "completed" | "failed";
+export type RefreshJobScope = "all" | "feed";
+
+export interface RefreshJob {
+  id: string;
+  scope: RefreshJobScope;
+  feed_id?: number;
+  status: RefreshJobStatus;
+  started_at: number;
+  finished_at?: number;
+  error?: string;
+}
+
 export interface Item {
   id: number;
   feed_id: number;

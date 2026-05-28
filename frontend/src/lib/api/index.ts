@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   Group,
   Feed,
+  RefreshJob,
   Item,
   Bookmark,
   ReadLaterItem,
@@ -74,9 +75,13 @@ export const feedAPI = {
   validate: (data: ValidateFeedRequest) =>
     api.post<APIResponse<ValidateFeedResponse>>("/feeds/validate", data),
 
-  refresh: () => api.post<void>("/feeds/refresh"),
+  refresh: () => api.post<APIResponse<RefreshJob>>("/feeds/refresh"),
 
-  refreshOne: (id: number) => api.post<void>(`/feeds/${id}/refresh`),
+  refreshOne: (id: number) =>
+    api.post<APIResponse<RefreshJob>>(`/feeds/${id}/refresh`),
+
+  getRefreshJob: (id: string) =>
+    api.get<APIResponse<RefreshJob>>(`/feeds/refresh-jobs/${id}`),
 
   batchCreate: (data: BatchCreateFeedsRequest) =>
     api.post<APIResponse<BatchCreateFeedsResponse>>("/feeds/batch", data),

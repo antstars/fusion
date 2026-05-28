@@ -5,8 +5,39 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { feedAPI, type Feed } from "@/lib/api";
+import { feedAPI, type Feed, type RefreshJob } from "@/lib/api";
 import { queryKeys } from "./keys";
+
+const refreshJobPollIntervalMs = 1000;
+const refreshJobPollTimeoutMs = 30 * 60 * 1000;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function waitForRefreshJob(job: RefreshJob): Promise<RefreshJob> {
+  const deadline = Date.now() + refreshJobPollTimeoutMs;
+  let current = job;
+
+  while (current.status === "running") {
+    if (Date.now() >= deadline) {
+      throw new Error("refresh timed out");
+    }
+
+    await sleep(refreshJobPollIntervalMs);
+    const res = await feedAPI.getRefreshJob(current.id);
+    if (!res.data) {
+      throw new Error("refresh job not found");
+    }
+    current = res.data;
+  }
+
+  if (current.status === "failed") {
+    throw new Error(current.error || "refresh failed");
+  }
+
+  return current;
+}
 
 export const feedQueries = {
   list: () =>
@@ -127,10 +158,18 @@ export function useDeleteFeed() {
 export function useRefreshFeeds() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => feedAPI.refresh(),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.feeds.all });
-      qc.invalidateQueries({ queryKey: queryKeys.items.all });
+    mutationFn: async () => {
+      const res = await feedAPI.refresh();
+      if (!res.data) {
+        throw new Error("refresh job not found");
+      }
+      return waitForRefreshJob(res.data);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.feeds.all }),
+        qc.invalidateQueries({ queryKey: queryKeys.items.all }),
+      ]);
     },
   });
 }
@@ -138,10 +177,18 @@ export function useRefreshFeeds() {
 export function useRefreshFeed() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => feedAPI.refreshOne(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.feeds.all });
-      qc.invalidateQueries({ queryKey: queryKeys.items.all });
+    mutationFn: async (id: number) => {
+      const res = await feedAPI.refreshOne(id);
+      if (!res.data) {
+        throw new Error("refresh job not found");
+      }
+      return waitForRefreshJob(res.data);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.feeds.all }),
+        qc.invalidateQueries({ queryKey: queryKeys.items.all }),
+      ]);
     },
   });
 }
