@@ -60,10 +60,11 @@ function ArticleItemComponent({
           <span className="shrink-0">{formatDate(article.pub_date)}</span>
         </div>
         <h3
+          title={article.title}
           className={cn(
             "break-words text-[14px] leading-snug",
             article.unread
-              ? "font-semibold text-foreground"
+              ? "line-clamp-3 font-semibold text-foreground"
               : "line-clamp-2 font-medium text-foreground/66",
           )}
         >
