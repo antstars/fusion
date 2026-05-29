@@ -170,15 +170,9 @@ func (p *Puller) pullFeed(ctx context.Context, feed *model.Feed) {
 		result.ExpiresAt,
 	)
 
-	inputs := make([]store.BatchCreateItemInput, 0, len(result.Items))
-	for _, item := range result.Items {
-		inputs = append(inputs, store.BatchCreateItemInput{
-			GUID:    item.GUID,
-			Title:   item.Title,
-			Link:    item.Link,
-			Content: item.Content,
-			PubDate: item.PubDate,
-		})
+	inputs, skippedEmptyContent := buildReadableItemInputs(result.Items)
+	if skippedEmptyContent > 0 {
+		p.logger.Debug("skipped empty-content feed items", "feed_id", feed.ID, "skipped", skippedEmptyContent)
 	}
 
 	newCount, err := p.store.BatchCreateItemsIgnore(feed.ID, inputs)

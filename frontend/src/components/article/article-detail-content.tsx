@@ -31,6 +31,19 @@ function getLinkDomain(url: string) {
   }
 }
 
+function replaceFailedArticleImage(img: HTMLImageElement, label: string) {
+  const fallback = document.createElement("div");
+  fallback.className = "article-image-fallback";
+  fallback.setAttribute("role", "img");
+  fallback.setAttribute("aria-label", label);
+
+  const text = document.createElement("span");
+  text.textContent = label;
+  fallback.appendChild(text);
+
+  img.replaceWith(fallback);
+}
+
 export function ArticleDetailContent({
   showCloseButton = false,
 }: ArticleDetailContentProps) {
@@ -125,6 +138,26 @@ export function ArticleDetailContent({
       }
     };
   }, [article?.id, scheduleScrollStateUpdate, updateScrollState]);
+
+  useEffect(() => {
+    const articleContent = articleContentRef.current;
+    if (!articleContent) return;
+
+    const handleImageError = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLImageElement)) return;
+      if (!articleContent.contains(target)) return;
+
+      replaceFailedArticleImage(target, t("article.imageUnavailable"));
+      scheduleScrollStateUpdate();
+    };
+
+    articleContent.addEventListener("error", handleImageError, true);
+
+    return () => {
+      articleContent.removeEventListener("error", handleImageError, true);
+    };
+  }, [article?.id, scheduleScrollStateUpdate, t]);
 
   const handleBackTop = () => {
     scrollViewportRef.current?.scrollTo({ top: 0, behavior: "smooth" });

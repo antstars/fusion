@@ -195,6 +195,7 @@ export const zhMessages: PartialMessages = {
   "article.filter.starred": "已收藏",
   "article.filter.unread": "未读",
   "article.groupFallback": "分组",
+  "article.imageUnavailable": "图片无法加载",
   "article.list.all": "全部文章",
   "article.list.loadMore": "加载更多",
   "article.list.loading": "加载中...",

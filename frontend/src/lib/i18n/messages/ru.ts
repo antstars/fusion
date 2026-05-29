@@ -195,6 +195,7 @@ export const ruMessages: PartialMessages = {
   "article.filter.starred": "Избранные",
   "article.filter.unread": "Непрочитанные",
   "article.groupFallback": "Группа",
+  "article.imageUnavailable": "Image unavailable",
   "article.list.all": "Все статьи",
   "article.list.loadMore": "Загрузить еще",
   "article.list.loading": "Загрузка...",

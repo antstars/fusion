@@ -195,6 +195,7 @@ export const ptMessages: PartialMessages = {
   "article.filter.starred": "Favoritos",
   "article.filter.unread": "Nao lidos",
   "article.groupFallback": "Grupo",
+  "article.imageUnavailable": "Image unavailable",
   "article.list.all": "Todos os artigos",
   "article.list.loadMore": "Carregar mais",
   "article.list.loading": "Carregando...",

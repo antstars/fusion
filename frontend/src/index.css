@@ -394,6 +394,24 @@
       0 16px 36px oklch(0 0 0 / 12%);
   }
 
+  .article-image-fallback {
+    display: flex;
+    min-height: 4.5rem;
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in oklch, var(--muted) 54%, transparent);
+    color: var(--muted-foreground);
+    font-size: 0.82em;
+    line-height: 1.4;
+    margin-block: 1.2em;
+    padding: 1rem;
+    text-align: center;
+  }
+
   a {
     overflow-wrap: anywhere;
     word-break: normal;

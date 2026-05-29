@@ -195,6 +195,7 @@ export const esMessages: PartialMessages = {
   "article.filter.starred": "Destacados",
   "article.filter.unread": "No leidos",
   "article.groupFallback": "Grupo",
+  "article.imageUnavailable": "Image unavailable",
   "article.list.all": "Todos los articulos",
   "article.list.loadMore": "Cargar mas",
   "article.list.loading": "Cargando...",

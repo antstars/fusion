@@ -195,6 +195,7 @@ export const deMessages: PartialMessages = {
   "article.filter.starred": "Favoriten",
   "article.filter.unread": "Ungelesen",
   "article.groupFallback": "Gruppe",
+  "article.imageUnavailable": "Image unavailable",
   "article.list.all": "Alle Artikel",
   "article.list.loadMore": "Mehr laden",
   "article.list.loading": "Ladt...",

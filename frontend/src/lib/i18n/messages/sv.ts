@@ -195,6 +195,7 @@ export const svMessages: PartialMessages = {
   "article.filter.starred": "Stjarnmarkta",
   "article.filter.unread": "Olasta",
   "article.groupFallback": "Grupp",
+  "article.imageUnavailable": "Image unavailable",
   "article.list.all": "Alla artiklar",
   "article.list.loadMore": "Ladda mer",
   "article.list.loading": "Laddar...",

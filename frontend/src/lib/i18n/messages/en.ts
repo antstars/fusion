@@ -196,6 +196,7 @@ export const enMessages = {
   "article.filter.starred": "Starred",
   "article.filter.unread": "Unread",
   "article.groupFallback": "Group",
+  "article.imageUnavailable": "Image unavailable",
   "article.list.all": "All Articles",
   "article.list.loadMore": "Load more",
   "article.list.loading": "Loading...",

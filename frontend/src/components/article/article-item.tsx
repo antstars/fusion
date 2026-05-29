@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   cn,
   extractFirstImageUrl,
@@ -15,6 +15,31 @@ interface ArticleItemProps {
   feedName: string;
   feedFaviconUrl: string | null;
   compact?: boolean;
+}
+
+interface ArticleThumbnailProps {
+  src: string;
+}
+
+function ArticleThumbnail({ src }: ArticleThumbnailProps) {
+  const [hasFailed, setHasFailed] = useState(false);
+
+  useEffect(() => {
+    setHasFailed(false);
+  }, [src]);
+
+  if (hasFailed) return null;
+
+  return (
+    <img
+      src={src}
+      alt=""
+      className="h-20 w-20 shrink-0 rounded-md object-cover"
+      loading="lazy"
+      decoding="async"
+      onError={() => setHasFailed(true)}
+    />
+  );
 }
 
 function ArticleItemComponent({
@@ -85,15 +110,7 @@ function ArticleItemComponent({
           {summary}
         </p>
       </div>
-      {thumbnailUrl ? (
-        <img
-          src={thumbnailUrl}
-          alt=""
-          className="h-20 w-20 shrink-0 rounded-md object-cover"
-          loading="lazy"
-          decoding="async"
-        />
-      ) : null}
+      {thumbnailUrl ? <ArticleThumbnail src={thumbnailUrl} /> : null}
     </div>
   );
 }
