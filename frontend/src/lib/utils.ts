@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import DOMPurify from "dompurify";
 import { getPreferredLocale } from "@/store/preferences";
+import { resolveSafeExternalUrl } from "@/lib/safe-url";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -70,4 +71,23 @@ export function extractSummary(html: string, maxLength = 120): string {
   if (text.length <= maxLength) return text;
   // Truncate and add ellipsis
   return text.slice(0, maxLength).trimEnd() + "…";
+}
+
+export function extractFirstImageUrl(
+  html: string,
+  baseUrl?: string | null,
+): string | null {
+  const clean = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["img"],
+    ALLOWED_ATTR: ["src"],
+  });
+  const template = document.createElement("template");
+  template.innerHTML = clean;
+
+  for (const img of template.content.querySelectorAll("img")) {
+    const safeUrl = resolveSafeExternalUrl(img.getAttribute("src"), baseUrl);
+    if (safeUrl) return safeUrl;
+  }
+
+  return null;
 }

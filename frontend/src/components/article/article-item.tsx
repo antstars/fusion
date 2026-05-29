@@ -1,5 +1,10 @@
 import { memo, useMemo } from "react";
-import { cn, formatDate, extractSummary } from "@/lib/utils";
+import {
+  cn,
+  extractFirstImageUrl,
+  extractSummary,
+  formatDate,
+} from "@/lib/utils";
 import type { Item } from "@/lib/api";
 import { FeedFavicon } from "@/components/feed/feed-favicon";
 
@@ -23,6 +28,10 @@ function ArticleItemComponent({
   const summary = useMemo(() => extractSummary(article.content, 150), [
     article.content,
   ]);
+  const thumbnailUrl = useMemo(
+    () => extractFirstImageUrl(article.content, article.link),
+    [article.content, article.link],
+  );
 
   return (
     <div
@@ -36,49 +45,55 @@ function ArticleItemComponent({
         }
       }}
       className={cn(
-        "article-row group relative flex w-full cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-2 text-left transition-all",
-        compact && "px-2 py-2",
+        "article-row group relative grid w-full cursor-pointer grid-cols-[8px_minmax(0,1fr)_auto] items-start gap-2 border px-2 py-3 text-left transition-all",
+        compact && "px-1.5 py-3",
       )}
       data-selected={isSelected}
       data-unread={article.unread}
     >
       <span
         className={cn(
-          "mt-[1.02rem] size-1.5 shrink-0 rounded-full transition-all",
-          article.unread
-            ? "bg-primary shadow-[0_0_0_2px_oklch(0.62_0.18_254_/_13%)]"
-            : "bg-transparent",
+          "mt-[1.1rem] size-1.5 rounded-full transition-all",
+          article.unread ? "bg-orange-500" : "bg-transparent",
         )}
         aria-hidden="true"
       />
-      {/* Article Content */}
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <div className="flex items-center gap-1.5 text-[11px] leading-none text-muted-foreground">
-          <FeedFavicon src={feedFaviconUrl} className="h-4 w-4 rounded-sm" />
-          <span className="min-w-0 truncate font-medium">{feedName}</span>
-          <span className="text-muted-foreground/60">·</span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold leading-none text-muted-foreground">
+          <FeedFavicon src={feedFaviconUrl} className="h-4 w-4 rounded" />
+          <span className="min-w-0 truncate">{feedName}</span>
+          <span className="shrink-0 text-muted-foreground/60">·</span>
           <span className="shrink-0">{formatDate(article.pub_date)}</span>
         </div>
         <h3
           title={article.title}
           className={cn(
-            "break-words text-[14px] leading-snug",
+            "break-words text-[14px] leading-[1.32] tracking-normal",
             article.unread
               ? "line-clamp-3 font-semibold text-foreground"
-              : "line-clamp-2 font-medium text-foreground/66",
+              : "line-clamp-2 font-medium text-foreground/75",
           )}
         >
           {article.title}
         </h3>
         <p
           className={cn(
-            "line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground/78",
+            "line-clamp-2 text-[12.5px] leading-[1.55] text-muted-foreground/82",
             compact && "line-clamp-1",
           )}
         >
           {summary}
         </p>
       </div>
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt=""
+          className="h-20 w-20 shrink-0 rounded-md object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : null}
     </div>
   );
 }

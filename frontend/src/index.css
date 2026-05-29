@@ -220,62 +220,43 @@
   position: relative;
   overflow: hidden;
   border-color: transparent;
+  border-radius: 0;
   background: transparent;
-  transform: translateZ(0);
   transition:
-    background 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    background 160ms ease,
+    color 160ms ease;
 }
 
 .article-row:hover {
-  background: var(--row-hover);
-  box-shadow:
-    inset 0 0 0 1px oklch(1 0 0 / 30%),
-    0 6px 18px oklch(0.2 0.025 248 / 5%);
-  transform: translateY(-1px) translateZ(0);
+  background: oklch(0.92 0.004 248 / 68%);
 }
 
 .article-row[data-unread="true"] {
-  background: linear-gradient(90deg, oklch(1 0 0 / 32%), oklch(1 0 0 / 18%));
+  background: transparent;
 }
 
 .article-row[data-selected="true"] {
-  background: var(--selected-bg);
-  border-color: var(--selected-border);
-  box-shadow:
-    inset 3px 0 0 var(--primary),
-    inset 0 1px 0 oklch(1 0 0 / 36%),
-    0 1px 2px oklch(0 0 0 / 7%),
-    0 10px 22px oklch(0.26 0.06 254 / 10%);
-  filter: saturate(1.03);
+  background: oklch(0.88 0.005 248 / 86%);
 }
 
 .article-row[data-selected="true"]:hover {
-  background: var(--selected-bg);
+  background: oklch(0.86 0.005 248 / 90%);
 }
 
 .article-row[data-selected="true"] h3 {
-  color: var(--selected-fg);
+  color: var(--foreground);
 }
 
 .article-row [aria-hidden="true"] {
-  transition:
-    background 220ms ease,
-    box-shadow 220ms ease,
-    transform 220ms ease;
+  transition: background 160ms ease;
 }
 
 .article-row[data-unread="true"] [aria-hidden="true"] {
-  box-shadow:
-    0 0 0 2px oklch(0.62 0.18 254 / 13%),
-    0 0 14px oklch(0.62 0.18 254 / 22%);
+  box-shadow: none;
 }
 
 .article-row:hover [aria-hidden="true"] {
-  transform: scale(1.12);
+  transform: none;
 }
 
 .mobile-smooth-scroll [data-slot="scroll-area-viewport"] {
