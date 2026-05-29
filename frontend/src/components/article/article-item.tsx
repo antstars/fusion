@@ -61,10 +61,10 @@ function ArticleItemComponent({
         </div>
         <h3
           className={cn(
-            "line-clamp-2 text-[14px] leading-snug",
+            "break-words text-[14px] leading-snug",
             article.unread
               ? "font-semibold text-foreground"
-              : "font-medium text-foreground/66",
+              : "line-clamp-2 font-medium text-foreground/66",
           )}
         >
           {article.title}
