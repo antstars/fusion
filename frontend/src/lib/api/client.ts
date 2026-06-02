@@ -17,11 +17,16 @@ export function setUnauthorizedCallback(callback: () => void) {
   onUnauthorized = callback;
 }
 
+function shouldHandleUnauthorized(endpoint: string, method: string): boolean {
+  return !(endpoint === "/sessions" && method === "POST");
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
+  const method = options.method ?? "GET";
 
   const response = await fetch(url, {
     ...options,
@@ -34,7 +39,11 @@ async function request<T>(
 
   if (!response.ok) {
     // Handle 401 Unauthorized
-    if (response.status === 401 && onUnauthorized) {
+    if (
+      response.status === 401 &&
+      onUnauthorized &&
+      shouldHandleUnauthorized(endpoint, method)
+    ) {
       onUnauthorized();
     }
 

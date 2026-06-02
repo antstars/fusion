@@ -17,6 +17,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [oidcEnabled, setOidcEnabled] = useState(false);
   const [oidcLoading, setOidcLoading] = useState(false);
@@ -44,6 +45,7 @@ function LoginPage() {
     e.preventDefault();
 
     setIsLoading(true);
+    setPasswordError("");
     try {
       await sessionAPI.login({ password });
       navigate({
@@ -51,7 +53,9 @@ function LoginPage() {
         params: { filter: defaultArticleFilter },
       });
     } catch {
-      toast.error(t("login.invalidPassword"));
+      const message = t("login.invalidPassword");
+      setPasswordError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -118,13 +122,28 @@ function LoginPage() {
             type="password"
             placeholder={t("login.passwordPlaceholder")}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (passwordError) {
+                setPasswordError("");
+              }
+            }}
             disabled={isLoading}
             autoComplete="current-password"
             spellCheck={false}
             aria-label={t("login.passwordPlaceholder")}
+            aria-invalid={passwordError ? true : undefined}
+            aria-describedby={passwordError ? "login-password-error" : undefined}
             autoFocus={!isMobile}
           />
+          {passwordError && (
+            <p
+              id="login-password-error"
+              className="-mt-2 text-sm font-medium text-destructive"
+            >
+              {passwordError}
+            </p>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? t("login.signingIn") : t("login.signIn")}
           </Button>
