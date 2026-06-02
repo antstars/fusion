@@ -29,10 +29,24 @@ interface ReaderScrollState {
   canBackTop: boolean;
 }
 
+interface FailedImageState {
+  articleId: number | null;
+  articleContent: string;
+  articleLink: string | null;
+  urls: ReadonlySet<string>;
+}
+
 const initialReaderScrollState: ReaderScrollState = {
   scrollProgress: 0,
   showScrolledTitle: false,
   canBackTop: false,
+};
+const emptyFailedImageUrls: ReadonlySet<string> = new Set();
+const initialFailedImageState: FailedImageState = {
+  articleId: null,
+  articleContent: "",
+  articleLink: null,
+  urls: emptyFailedImageUrls,
 };
 
 function getLinkDomain(url: string) {
@@ -41,19 +55,6 @@ function getLinkDomain(url: string) {
   } catch {
     return url;
   }
-}
-
-function replaceFailedArticleImage(img: HTMLImageElement, label: string) {
-  const fallback = document.createElement("div");
-  fallback.className = "article-image-fallback";
-  fallback.setAttribute("role", "img");
-  fallback.setAttribute("aria-label", label);
-
-  const text = document.createElement("span");
-  text.textContent = label;
-  fallback.appendChild(text);
-
-  img.replaceWith(fallback);
 }
 
 export function ArticleDetailContent({
@@ -68,6 +69,9 @@ export function ArticleDetailContent({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showScrolledTitle, setShowScrolledTitle] = useState(false);
   const [canBackTop, setCanBackTop] = useState(false);
+  const [failedImages, setFailedImages] = useState<FailedImageState>(
+    initialFailedImageState,
+  );
   const {
     article,
     bookmark,
@@ -167,21 +171,32 @@ export function ArticleDetailContent({
   }, [article?.id, scheduleScrollStateUpdate]);
 
   const articleContent = article?.content ?? "";
+  const articleId = article?.id ?? null;
+  const articleLink = safeArticleLink ?? null;
+  const failedImageUrls =
+    failedImages.articleId === articleId &&
+    failedImages.articleContent === articleContent &&
+    failedImages.articleLink === articleLink
+      ? failedImages.urls
+      : emptyFailedImageUrls;
 
   const articleHtml = useMemo(() => {
     if (!articleContent) return "";
 
-    return processArticleContent(articleContent, safeArticleLink ?? undefined);
-  }, [articleContent, safeArticleLink]);
+    return processArticleContent(articleContent, safeArticleLink ?? undefined, {
+      failedImageUrls,
+      imageUnavailableLabel: t("article.imageUnavailable"),
+    });
+  }, [articleContent, failedImageUrls, safeArticleLink, t]);
 
   useEffect(() => {
-    const articleContent = articleContentRef.current;
-    if (!articleContent) return;
+    const articleElement = articleContentRef.current;
+    if (!articleElement) return;
 
     const handleImageLoad = (event: Event) => {
       const target = event.target;
       if (!(target instanceof HTMLImageElement)) return;
-      if (!articleContent.contains(target)) return;
+      if (!articleElement.contains(target)) return;
 
       scheduleScrollStateUpdate();
     };
@@ -189,15 +204,35 @@ export function ArticleDetailContent({
     const handleImageError = (event: Event) => {
       const target = event.target;
       if (!(target instanceof HTMLImageElement)) return;
-      if (!articleContent.contains(target)) return;
+      if (!articleElement.contains(target)) return;
 
-      replaceFailedArticleImage(target, t("article.imageUnavailable"));
+      const failedUrl = target.currentSrc || target.src;
+      if (failedUrl) {
+        setFailedImages((current) => {
+          const currentUrls =
+            current.articleId === articleId &&
+            current.articleContent === articleContent &&
+            current.articleLink === articleLink
+              ? current.urls
+              : emptyFailedImageUrls;
+          if (currentUrls.has(failedUrl)) return current;
+
+          const next = new Set(currentUrls);
+          next.add(failedUrl);
+          return {
+            articleId,
+            articleContent,
+            articleLink,
+            urls: next,
+          };
+        });
+      }
       scheduleScrollStateUpdate();
     };
 
-    articleContent.addEventListener("load", handleImageLoad, true);
-    articleContent.addEventListener("error", handleImageError, true);
-    for (const img of articleContent.querySelectorAll("img")) {
+    articleElement.addEventListener("load", handleImageLoad, true);
+    articleElement.addEventListener("error", handleImageError, true);
+    for (const img of articleElement.querySelectorAll("img")) {
       if (img.complete) {
         scheduleScrollStateUpdate();
         break;
@@ -205,10 +240,16 @@ export function ArticleDetailContent({
     }
 
     return () => {
-      articleContent.removeEventListener("load", handleImageLoad, true);
-      articleContent.removeEventListener("error", handleImageError, true);
+      articleElement.removeEventListener("load", handleImageLoad, true);
+      articleElement.removeEventListener("error", handleImageError, true);
     };
-  }, [articleHtml, scheduleScrollStateUpdate, t]);
+  }, [
+    articleContent,
+    articleHtml,
+    articleId,
+    articleLink,
+    scheduleScrollStateUpdate,
+  ]);
 
   const handleBackTop = () => {
     scrollViewportRef.current?.scrollTo({ top: 0, behavior: "smooth" });

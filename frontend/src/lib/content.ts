@@ -63,6 +63,11 @@ const TRACKER_PATTERNS = [
   /emailtracking/i,
 ];
 
+interface ProcessArticleContentOptions {
+  failedImageUrls?: ReadonlySet<string>;
+  imageUnavailableLabel?: string;
+}
+
 function isTrackingPixel(img: HTMLImageElement): boolean {
   const width = img.getAttribute("width");
   const height = img.getAttribute("height");
@@ -96,6 +101,19 @@ function normalizeImageDimension(
   img.setAttribute(attribute, String(dimension));
 }
 
+function createImageFallback(label: string): HTMLDivElement {
+  const fallback = document.createElement("div");
+  fallback.className = "article-image-fallback";
+  fallback.setAttribute("role", "img");
+  fallback.setAttribute("aria-label", label);
+
+  const text = document.createElement("span");
+  text.textContent = label;
+  fallback.appendChild(text);
+
+  return fallback;
+}
+
 function isEmptyElement(el: Element): boolean {
   if (SELF_CLOSING_TAGS.has(el.tagName.toLowerCase())) return false;
   if (el.querySelector("img")) return false;
@@ -120,12 +138,25 @@ function sanitizeAnchors(root: DocumentFragment, articleUrl: string | null): voi
   }
 }
 
-function sanitizeImages(root: DocumentFragment, articleUrl: string | null): void {
+function sanitizeImages(
+  root: DocumentFragment,
+  articleUrl: string | null,
+  options: ProcessArticleContentOptions,
+): void {
   for (const node of root.querySelectorAll("img")) {
     const img = node as HTMLImageElement;
     const safeSrc = resolveSafeExternalUrl(node.getAttribute("src"), articleUrl);
     if (!safeSrc) {
       img.remove();
+      continue;
+    }
+
+    if (options.failedImageUrls?.has(safeSrc)) {
+      img.replaceWith(
+        createImageFallback(
+          options.imageUnavailableLabel ?? "Image unavailable",
+        ),
+      );
       continue;
     }
 
@@ -154,6 +185,7 @@ function removeEmptyWrappers(root: DocumentFragment): void {
 export function processArticleContent(
   html: string,
   articleUrl?: string,
+  options: ProcessArticleContentOptions = {},
 ): string {
   const safeArticleUrl = toSafeExternalUrl(articleUrl);
   const fragment = purify.sanitize(html, {
@@ -164,7 +196,7 @@ export function processArticleContent(
   }) as DocumentFragment;
 
   sanitizeAnchors(fragment, safeArticleUrl);
-  sanitizeImages(fragment, safeArticleUrl);
+  sanitizeImages(fragment, safeArticleUrl, options);
   removeEmptyWrappers(fragment);
 
   const container = document.createElement("div");
