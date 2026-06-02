@@ -59,16 +59,9 @@ function ArticleItemComponent({
   );
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={() => onSelectArticle(article.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelectArticle(article.id);
-        }
-      }}
       className={cn(
         "article-row group relative grid w-full cursor-pointer grid-cols-[8px_minmax(0,1fr)_auto] items-start gap-2 border px-2 py-3 text-left transition-all",
         compact && "px-1.5 py-3",
@@ -111,7 +104,7 @@ function ArticleItemComponent({
         </p>
       </div>
       {thumbnailUrl ? <ArticleThumbnail src={thumbnailUrl} /> : null}
-    </div>
+    </button>
   );
 }
 

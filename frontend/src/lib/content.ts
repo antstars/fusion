@@ -37,7 +37,17 @@ const ALLOWED_TAGS = [
   "figcaption",
 ];
 
-const ALLOWED_ATTR = ["href", "src", "alt", "title", "class", "target", "rel"];
+const ALLOWED_ATTR = [
+  "href",
+  "src",
+  "alt",
+  "title",
+  "class",
+  "target",
+  "rel",
+  "width",
+  "height",
+];
 
 // Tags that are meaningful even when empty
 const SELF_CLOSING_TAGS = new Set(["br", "hr", "img", "td", "th", "li"]);
@@ -62,6 +72,28 @@ function isTrackingPixel(img: HTMLImageElement): boolean {
 
   const src = img.getAttribute("src") || "";
   return TRACKER_PATTERNS.some((pattern) => pattern.test(src));
+}
+
+function normalizeImageDimension(
+  img: HTMLImageElement,
+  attribute: "width" | "height",
+): void {
+  const value = img.getAttribute(attribute);
+  if (value === null) return;
+
+  const trimmed = value.trim();
+  if (!/^\d{1,5}$/.test(trimmed)) {
+    img.removeAttribute(attribute);
+    return;
+  }
+
+  const dimension = Number(trimmed);
+  if (dimension <= 0) {
+    img.removeAttribute(attribute);
+    return;
+  }
+
+  img.setAttribute(attribute, String(dimension));
 }
 
 function isEmptyElement(el: Element): boolean {
@@ -102,7 +134,11 @@ function sanitizeImages(root: DocumentFragment, articleUrl: string | null): void
     img.setAttribute("decoding", "async");
     if (isTrackingPixel(img)) {
       img.remove();
+      continue;
     }
+
+    normalizeImageDimension(img, "width");
+    normalizeImageDimension(img, "height");
   }
 }
 

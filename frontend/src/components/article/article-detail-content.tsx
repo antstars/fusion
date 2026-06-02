@@ -23,6 +23,18 @@ interface ArticleDetailContentProps {
   showCloseButton?: boolean;
 }
 
+interface ReaderScrollState {
+  scrollProgress: number;
+  showScrolledTitle: boolean;
+  canBackTop: boolean;
+}
+
+const initialReaderScrollState: ReaderScrollState = {
+  scrollProgress: 0,
+  showScrolledTitle: false,
+  canBackTop: false,
+};
+
 function getLinkDomain(url: string) {
   try {
     return new URL(url).hostname;
@@ -52,6 +64,7 @@ export function ArticleDetailContent({
   const articleContentRef = useRef<HTMLElement>(null);
   const titleBlockRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
+  const scrollStateRef = useRef<ReaderScrollState>(initialReaderScrollState);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showScrolledTitle, setShowScrolledTitle] = useState(false);
   const [canBackTop, setCanBackTop] = useState(false);
@@ -76,6 +89,28 @@ export function ArticleDetailContent({
     starred,
   } = useSelectedArticleDetail();
 
+  const commitScrollState = useCallback((next: ReaderScrollState) => {
+    const current = scrollStateRef.current;
+    if (
+      current.scrollProgress === next.scrollProgress &&
+      current.showScrolledTitle === next.showScrolledTitle &&
+      current.canBackTop === next.canBackTop
+    ) {
+      return;
+    }
+
+    scrollStateRef.current = next;
+    if (current.scrollProgress !== next.scrollProgress) {
+      setScrollProgress(next.scrollProgress);
+    }
+    if (current.showScrolledTitle !== next.showScrolledTitle) {
+      setShowScrolledTitle(next.showScrolledTitle);
+    }
+    if (current.canBackTop !== next.canBackTop) {
+      setCanBackTop(next.canBackTop);
+    }
+  }, []);
+
   const updateScrollState = useCallback(() => {
     const viewport = scrollViewportRef.current;
     if (!viewport) return;
@@ -89,10 +124,12 @@ export function ArticleDetailContent({
       ? titleBlockRef.current.offsetTop + titleBlockRef.current.offsetHeight - 48
       : 96;
 
-    setScrollProgress(Math.min(100, Math.max(0, progress)));
-    setShowScrolledTitle(viewport.scrollTop > titleThreshold);
-    setCanBackTop(viewport.scrollTop > 120);
-  }, []);
+    commitScrollState({
+      scrollProgress: Math.min(100, Math.max(0, progress)),
+      showScrolledTitle: viewport.scrollTop > titleThreshold,
+      canBackTop: viewport.scrollTop > 120,
+    });
+  }, [commitScrollState]);
 
   const scheduleScrollStateUpdate = useCallback(() => {
     if (scrollFrameRef.current !== null) return;
@@ -105,8 +142,9 @@ export function ArticleDetailContent({
 
   useEffect(() => {
     scrollViewportRef.current?.scrollTo({ top: 0 });
-    window.requestAnimationFrame(updateScrollState);
-  }, [article?.id, selectedArticleId, updateScrollState]);
+    commitScrollState(initialReaderScrollState);
+    scheduleScrollStateUpdate();
+  }, [article?.id, commitScrollState, scheduleScrollStateUpdate, selectedArticleId]);
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
@@ -118,30 +156,35 @@ export function ArticleDetailContent({
     });
     window.addEventListener("resize", scheduleScrollStateUpdate);
 
-    const resizeObserver =
-      typeof ResizeObserver === "undefined"
-        ? null
-        : new ResizeObserver(scheduleScrollStateUpdate);
-
-    resizeObserver?.observe(viewport);
-    if (articleContentRef.current) {
-      resizeObserver?.observe(articleContentRef.current);
-    }
-
     return () => {
       viewport.removeEventListener("scroll", scheduleScrollStateUpdate);
       window.removeEventListener("resize", scheduleScrollStateUpdate);
-      resizeObserver?.disconnect();
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
         scrollFrameRef.current = null;
       }
     };
-  }, [article?.id, scheduleScrollStateUpdate, updateScrollState]);
+  }, [article?.id, scheduleScrollStateUpdate]);
+
+  const articleContent = article?.content ?? "";
+
+  const articleHtml = useMemo(() => {
+    if (!articleContent) return "";
+
+    return processArticleContent(articleContent, safeArticleLink ?? undefined);
+  }, [articleContent, safeArticleLink]);
 
   useEffect(() => {
     const articleContent = articleContentRef.current;
     if (!articleContent) return;
+
+    const handleImageLoad = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLImageElement)) return;
+      if (!articleContent.contains(target)) return;
+
+      scheduleScrollStateUpdate();
+    };
 
     const handleImageError = (event: Event) => {
       const target = event.target;
@@ -152,24 +195,24 @@ export function ArticleDetailContent({
       scheduleScrollStateUpdate();
     };
 
+    articleContent.addEventListener("load", handleImageLoad, true);
     articleContent.addEventListener("error", handleImageError, true);
+    for (const img of articleContent.querySelectorAll("img")) {
+      if (img.complete) {
+        scheduleScrollStateUpdate();
+        break;
+      }
+    }
 
     return () => {
+      articleContent.removeEventListener("load", handleImageLoad, true);
       articleContent.removeEventListener("error", handleImageError, true);
     };
-  }, [article?.id, scheduleScrollStateUpdate, t]);
+  }, [articleHtml, scheduleScrollStateUpdate, t]);
 
   const handleBackTop = () => {
     scrollViewportRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  const articleContent = article?.content ?? "";
-
-  const articleHtml = useMemo(() => {
-    if (!articleContent) return "";
-
-    return processArticleContent(articleContent, safeArticleLink ?? undefined);
-  }, [articleContent, safeArticleLink]);
 
   if (!article) {
     if (selectedArticleId !== null) {
