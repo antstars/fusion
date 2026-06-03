@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCheck, Loader2 } from "lucide-react";
+import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +16,7 @@ import {
   useItems,
   useMarkItemsRead,
 } from "@/queries/items";
-import { useFeedLookup } from "@/queries/feeds";
+import { useFeedLookup, useRefreshFeeds } from "@/queries/feeds";
 import { useGroups } from "@/queries/groups";
 import {
   useBookmarkLookup,
@@ -68,6 +69,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
 
   const { data: groups = [] } = useGroups();
   const { feeds, getFeedById, isLoading: isFeedsLoading } = useFeedLookup();
+  const refreshFeeds = useRefreshFeeds();
   const markItemsRead = useMarkItemsRead();
   const { getBookmarkByItemId } = useBookmarkLookup();
   const { getReadLaterByItemId } = useReadLaterLookup();
@@ -236,6 +238,17 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     }
   };
 
+  const handleRefreshFeeds = async () => {
+    try {
+      toast.info(t("feeds.toast.refreshing"));
+      await refreshFeeds.mutateAsync();
+      toast.success(t("feeds.toast.refreshed"));
+    } catch (error) {
+      console.error("Failed to refresh feeds:", error);
+      toast.error(t("feeds.toast.refreshFailed"));
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
       <ContentHeader className={compact ? "px-3 sm:px-3" : undefined}>
@@ -250,17 +263,32 @@ export function ArticleList({ compact = false }: ArticleListProps) {
             </span>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={handleMarkAllAsRead}
-          disabled={unreadCount === 0}
-          className="mr-1 text-muted-foreground hover:text-foreground"
-          aria-label={t("article.list.markAllRead")}
-          title={t("article.list.markAllRead")}
-        >
-          <CheckCheck className="h-4 w-4" />
-        </Button>
+        <div className="mr-1 flex shrink-0 items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleMarkAllAsRead}
+            disabled={unreadCount === 0}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label={t("article.list.markAllRead")}
+            title={t("article.list.markAllRead")}
+          >
+            <CheckCheck className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleRefreshFeeds}
+            disabled={refreshFeeds.isPending}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label={t("common.refresh")}
+            title={t("common.refresh")}
+          >
+            <RefreshCw
+              className={cn("h-4 w-4", refreshFeeds.isPending && "animate-spin")}
+            />
+          </Button>
+        </div>
       </ContentHeader>
 
       {/* Article area with filter tabs */}
