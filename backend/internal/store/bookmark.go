@@ -93,6 +93,21 @@ func (s *Store) DeleteBookmarkByLink(link string) error {
 	return err
 }
 
+func (s *Store) DeleteBookmarkByItemID(itemID int64) error {
+	result, err := s.exec(`DELETE FROM bookmarks WHERE item_id = :item_id`, sql.Named("item_id", itemID))
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("%w: bookmark", ErrNotFound)
+	}
+	return nil
+}
+
 func (s *Store) UpdateBookmarkItemIDByLink(itemID int64, link string) error {
 	_, err := s.exec(`
 		UPDATE bookmarks

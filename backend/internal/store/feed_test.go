@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -606,5 +607,31 @@ func TestBatchCreateFeedsHandlesExistingAndInBatchDuplicates(t *testing.T) {
 	}
 	if len(feeds) != 3 {
 		t.Fatalf("expected total 3 feeds (1 existing + 2 new), got %d", len(feeds))
+	}
+}
+
+func TestSearchFeedsAppliesLimit(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Search Feed Limit Group")
+	for i := range 3 {
+		mustCreateFeed(
+			t,
+			store,
+			group.ID,
+			fmt.Sprintf("Search Feed %d", i),
+			fmt.Sprintf("https://example.com/search-feed-%d.xml", i),
+			"https://example.com",
+			"",
+		)
+	}
+
+	results, err := store.SearchFeeds("Search Feed", 2)
+	if err != nil {
+		t.Fatalf("SearchFeeds() failed: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 search results, got %d", len(results))
 	}
 }

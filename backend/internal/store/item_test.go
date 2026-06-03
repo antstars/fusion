@@ -213,10 +213,44 @@ func TestGetItem(t *testing.T) {
 	if item.ID != created.ID || item.Title != created.Title {
 		t.Error("retrieved item doesn't match created item")
 	}
+	if item.Bookmarked || item.ReadLater {
+		t.Error("expected unsaved item status flags to be false")
+	}
 
 	_, err = store.GetItem(99999)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("expected ErrNotFound for non-existent item, got %v", err)
+	}
+}
+
+func TestItemSavedStatusFlags(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Saved Status Group")
+	feed := mustCreateFeed(t, store, group.ID, "Saved Status Feed", "https://example.com/saved-status.xml", "https://example.com", "")
+	item := mustCreateItem(t, store, feed.ID, "saved-status-1", "Saved Status", "https://example.com/saved-status", "Content", 123)
+
+	mustCreateBookmark(t, store, &item.ID, item.Link, item.Title, item.Content, item.PubDate, feed.Name)
+	mustCreateReadLaterItem(t, store, &item.ID, item.Link, item.Title, item.Content, item.PubDate, feed.Name)
+
+	detail, err := store.GetItem(item.ID)
+	if err != nil {
+		t.Fatalf("GetItem() failed: %v", err)
+	}
+	if !detail.Bookmarked || !detail.ReadLater {
+		t.Fatalf("expected detail saved flags to be true, got bookmarked=%v read_later=%v", detail.Bookmarked, detail.ReadLater)
+	}
+
+	items, err := store.ListItems(ListItemsParams{FeedID: &feed.ID})
+	if err != nil {
+		t.Fatalf("ListItems() failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if !items[0].Bookmarked || !items[0].ReadLater {
+		t.Fatalf("expected list saved flags to be true, got bookmarked=%v read_later=%v", items[0].Bookmarked, items[0].ReadLater)
 	}
 }
 

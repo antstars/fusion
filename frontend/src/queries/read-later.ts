@@ -1,8 +1,9 @@
 import { useCallback, useMemo } from "react";
 import {
-  queryOptions,
+  infiniteQueryOptions,
+  type InfiniteData,
   useMutation,
-  useQuery,
+  useInfiniteQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { readLaterAPI, type Item, type ReadLaterItem } from "@/lib/api";
@@ -10,28 +11,44 @@ import { useArticleSessionStore } from "@/store/article-session";
 import { queryKeys } from "./keys";
 import { useFeedLookup } from "./feeds";
 
+const savedItemsPageSize = 100;
+
+type ReadLaterListResponse = Awaited<ReturnType<typeof readLaterAPI.list>>;
+type ReadLaterInfiniteData = InfiniteData<ReadLaterListResponse, number>;
+
 function resolveReadLaterItemId(item: ReadLaterItem): number {
   return item.item_id ?? -item.id;
 }
 
 export const readLaterQueries = {
   list: () =>
-    queryOptions({
+    infiniteQueryOptions({
       queryKey: queryKeys.readLater.list(),
-      queryFn: async () => {
-        const res = await readLaterAPI.list(100, 0);
-        return res.data;
+      queryFn: ({ pageParam }) =>
+        readLaterAPI.list(savedItemsPageSize, pageParam),
+      initialPageParam: 0,
+      getNextPageParam: (lastPage, allPages) => {
+        const fetched = allPages.reduce((n, page) => n + page.data.length, 0);
+        return fetched < lastPage.total ? fetched : undefined;
       },
       staleTime: Number.POSITIVE_INFINITY,
     }),
 };
 
 export function useReadLaterItems() {
-  return useQuery(readLaterQueries.list());
+  const query = useInfiniteQuery(readLaterQueries.list());
+  const readLaterItems = useMemo(
+    () => query.data?.pages.flatMap((page) => page.data) ?? [],
+    [query.data],
+  );
+  const total = query.data?.pages[0]?.total ?? readLaterItems.length;
+
+  return { ...query, data: readLaterItems, total };
 }
 
 export function useReadLaterLookup() {
-  const { data: readLaterItems = [] } = useReadLaterItems();
+  const readLaterQuery = useReadLaterItems();
+  const { data: readLaterItems = [], total } = readLaterQuery;
   const readLaterOverrides = useArticleSessionStore((s) => s.readLaterOverrides);
 
   const byArticleId = useMemo(
@@ -40,7 +57,8 @@ export function useReadLaterLookup() {
   );
 
   const isItemReadLater = useCallback(
-    (itemId: number) => readLaterOverrides[itemId] ?? byArticleId.has(itemId),
+    (itemId: number, fallback = false) =>
+      readLaterOverrides[itemId] ?? (byArticleId.has(itemId) || fallback),
     [byArticleId, readLaterOverrides],
   );
 
@@ -49,7 +67,13 @@ export function useReadLaterLookup() {
     [byArticleId],
   );
 
-  return { readLaterItems, isItemReadLater, getReadLaterByItemId };
+  return {
+    readLaterItems,
+    readLaterTotal: total,
+    readLaterQuery,
+    isItemReadLater,
+    getReadLaterByItemId,
+  };
 }
 
 export function useReadLaterArticles(filters: {
@@ -84,6 +108,8 @@ export function useReadLaterArticles(filters: {
         pub_date: item.pub_date,
         unread: false,
         created_at: item.created_at,
+        bookmarked: false,
+        read_later: true,
       }),
     );
   }, [
@@ -118,24 +144,8 @@ export function useCreateReadLaterItem() {
     },
     onSuccess: (readLaterItem) => {
       const itemId = resolveReadLaterItemId(readLaterItem);
-      qc.setQueryData(
-        queryKeys.readLater.list(),
-        (old: ReadLaterItem[] | undefined) => {
-          if (!old) return [readLaterItem];
-
-          const index = old.findIndex(
-            (item) => resolveReadLaterItemId(item) === itemId,
-          );
-          if (index === -1) {
-            return [readLaterItem, ...old];
-          }
-
-          const next = [...old];
-          next[index] = readLaterItem;
-          return next;
-        },
-      );
       setReadLaterOverride(itemId, true);
+      void qc.invalidateQueries({ queryKey: queryKeys.readLater.all });
     },
   });
 }
@@ -153,16 +163,32 @@ export function useDeleteReadLaterItem() {
     },
     onSuccess: (readLaterItemId) => {
       const readLaterItem = qc
-        .getQueryData<ReadLaterItem[]>(queryKeys.readLater.list())
-        ?.find((item) => item.id === readLaterItemId);
-      if (!readLaterItem) return;
+        .getQueryData<ReadLaterInfiniteData>(queryKeys.readLater.list())
+        ?.pages.flatMap((page) => page.data)
+        .find((item) => item.id === readLaterItemId);
+      if (readLaterItem) {
+        setReadLaterOverride(resolveReadLaterItemId(readLaterItem), false);
+      }
 
-      qc.setQueryData(
-        queryKeys.readLater.list(),
-        (old: ReadLaterItem[] | undefined) =>
-          old?.filter((item) => item.id !== readLaterItemId),
-      );
-      setReadLaterOverride(resolveReadLaterItemId(readLaterItem), false);
+      void qc.invalidateQueries({ queryKey: queryKeys.readLater.all });
+    },
+  });
+}
+
+export function useDeleteReadLaterItemByItem() {
+  const qc = useQueryClient();
+  const setReadLaterOverride = useArticleSessionStore(
+    (s) => s.setReadLaterOverride,
+  );
+
+  return useMutation({
+    mutationFn: async (itemId: number) => {
+      await readLaterAPI.deleteByItem(itemId);
+      return itemId;
+    },
+    onSuccess: (itemId) => {
+      setReadLaterOverride(itemId, false);
+      void qc.invalidateQueries({ queryKey: queryKeys.readLater.all });
     },
   });
 }

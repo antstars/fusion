@@ -55,6 +55,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_items_feed_guid ON items(feed_id, guid);
 CREATE INDEX IF NOT EXISTS idx_items_unread ON items(unread) WHERE unread = 1;
 CREATE INDEX IF NOT EXISTS idx_items_pub_date ON items(pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_items_feed_unread ON items(feed_id, unread);
+CREATE INDEX IF NOT EXISTS idx_items_unread_pub_date_id ON items(pub_date DESC, id DESC) WHERE unread = 1;
+CREATE INDEX IF NOT EXISTS idx_items_feed_pub_date_id ON items(feed_id, pub_date DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_items_feed_unread_pub_date_id ON items(feed_id, unread, pub_date DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_items_search ON items USING GIN (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(content, '')));
 
 CREATE TABLE IF NOT EXISTS bookmarks (
 	id BIGSERIAL PRIMARY KEY,
@@ -67,6 +71,7 @@ CREATE TABLE IF NOT EXISTS bookmarks (
 	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
 );
 CREATE INDEX IF NOT EXISTS idx_bookmarks_created_at ON bookmarks(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_item_id ON bookmarks(item_id) WHERE item_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS read_later_items (
 	id BIGSERIAL PRIMARY KEY,
@@ -79,6 +84,7 @@ CREATE TABLE IF NOT EXISTS read_later_items (
 	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
 );
 CREATE INDEX IF NOT EXISTS idx_read_later_items_created_at ON read_later_items(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_read_later_items_item_id ON read_later_items(item_id) WHERE item_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS feed_fetch_state (
 	feed_id BIGINT PRIMARY KEY REFERENCES feeds(id) ON UPDATE CASCADE ON DELETE CASCADE,

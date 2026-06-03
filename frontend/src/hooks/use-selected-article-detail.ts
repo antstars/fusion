@@ -3,11 +3,13 @@ import {
   useBookmarkLookup,
   useCreateBookmark,
   useDeleteBookmark,
+  useDeleteBookmarkByItem,
   useStarredItems,
 } from "@/queries/bookmarks";
 import {
   useCreateReadLaterItem,
   useDeleteReadLaterItem,
+  useDeleteReadLaterItemByItem,
   useReadLaterArticles,
   useReadLaterLookup,
 } from "@/queries/read-later";
@@ -81,8 +83,10 @@ export function useSelectedArticleDetail() {
   const { isItemReadLater, getReadLaterByItemId } = useReadLaterLookup();
   const createBookmark = useCreateBookmark();
   const deleteBookmark = useDeleteBookmark();
+  const deleteBookmarkByItem = useDeleteBookmarkByItem();
   const createReadLaterItem = useCreateReadLaterItem();
   const deleteReadLaterItem = useDeleteReadLaterItem();
+  const deleteReadLaterItemByItem = useDeleteReadLaterItemByItem();
 
   const articleIds = listArticles.map((article) => article.id);
 
@@ -117,11 +121,15 @@ export function useSelectedArticleDetail() {
     (!isSavedMode || fetchedArticle !== undefined);
   const feed = displayArticle ? getFeedById(displayArticle.feed_id) : null;
   const bookmark = displayArticle ? getBookmarkByItemId(displayArticle.id) : null;
-  const starred = displayArticle ? isItemStarred(displayArticle.id) : false;
+  const starred = displayArticle
+    ? isItemStarred(displayArticle.id, displayArticle.bookmarked)
+    : false;
   const readLaterItem = displayArticle
     ? getReadLaterByItemId(displayArticle.id)
     : null;
-  const readLater = displayArticle ? isItemReadLater(displayArticle.id) : false;
+  const readLater = displayArticle
+    ? isItemReadLater(displayArticle.id, displayArticle.read_later)
+    : false;
   const safeArticleLink = displayArticle
     ? toSafeExternalUrl(displayArticle.link)
     : null;
@@ -148,6 +156,8 @@ export function useSelectedArticleDetail() {
         const bookmark = getBookmarkByItemId(displayArticle.id);
         if (bookmark) {
           await deleteBookmark.mutateAsync(bookmark.id);
+        } else if (displayArticle.id > 0) {
+          await deleteBookmarkByItem.mutateAsync(displayArticle.id);
         }
       } else {
         await createBookmark.mutateAsync(displayArticle);
@@ -164,6 +174,8 @@ export function useSelectedArticleDetail() {
         const item = getReadLaterByItemId(displayArticle.id);
         if (item) {
           await deleteReadLaterItem.mutateAsync(item.id);
+        } else if (displayArticle.id > 0) {
+          await deleteReadLaterItemByItem.mutateAsync(displayArticle.id);
         }
       } else {
         await createReadLaterItem.mutateAsync(displayArticle);

@@ -88,6 +88,21 @@ func (s *Store) DeleteReadLaterItem(id int64) error {
 	return nil
 }
 
+func (s *Store) DeleteReadLaterItemByItemID(itemID int64) error {
+	result, err := s.exec(`DELETE FROM read_later_items WHERE item_id = :item_id`, sql.Named("item_id", itemID))
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("%w: read later item", ErrNotFound)
+	}
+	return nil
+}
+
 func (s *Store) CountReadLaterItems() (int, error) {
 	var count int
 	err := s.queryRow(`SELECT COUNT(*) FROM read_later_items`).Scan(&count)

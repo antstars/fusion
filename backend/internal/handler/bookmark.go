@@ -150,3 +150,22 @@ func (h *Handler) deleteBookmark(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (h *Handler) deleteBookmarkByItemID(c *gin.Context) {
+	itemID, err := strconv.ParseInt(c.Param("item_id"), 10, 64)
+	if err != nil {
+		badRequestError(c, "invalid item_id")
+		return
+	}
+
+	if err := h.store.DeleteBookmarkByItemID(itemID); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			notFoundError(c, "bookmark")
+			return
+		}
+		internalError(c, err, "delete bookmark by item")
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}

@@ -17,8 +17,8 @@ export function FeedList() {
   const { data: groups = [], isLoading } = useGroups();
   const { feeds, getFeedsByGroup } = useFeedLookup();
   const { getTotalUnreadCount, getTotalItemCount } = useUnreadCounts();
-  const { bookmarks } = useBookmarkLookup();
-  const { readLaterItems } = useReadLaterLookup();
+  const { bookmarkTotal } = useBookmarkLookup();
+  const { readLaterTotal } = useReadLaterLookup();
   const {
     selectedFeedId,
     selectedGroupId,
@@ -33,8 +33,8 @@ export function FeedList() {
     isOnHomePage && selectedFeedId === null && selectedGroupId === null;
   const totalUnread = getTotalUnreadCount();
   const totalItems = getTotalItemCount();
-  const starredCount = bookmarks.length;
-  const readLaterCount = readLaterItems.length;
+  const starredCount = bookmarkTotal;
+  const readLaterCount = readLaterTotal;
 
   const topFilters: Array<{
     value: "all" | "unread" | "starred" | "read-later";

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/0x2E/fusion/internal/model"
@@ -25,7 +26,10 @@ type ListItemsParams struct {
 
 func (s *Store) ListItems(params ListItemsParams) ([]*model.Item, error) {
 	query := `
-		SELECT items.id, items.feed_id, items.guid, items.title, items.link, items.content, items.pub_date, items.unread, items.created_at
+		SELECT items.id, items.feed_id, items.guid, items.title, items.link, items.content,
+		       items.pub_date, items.unread, items.created_at,
+		       EXISTS(SELECT 1 FROM bookmarks WHERE bookmarks.item_id = items.id) AS bookmarked,
+		       EXISTS(SELECT 1 FROM read_later_items WHERE read_later_items.item_id = items.id) AS read_later
 		FROM items
 	`
 	args := []any{}
@@ -76,7 +80,19 @@ func (s *Store) ListItems(params ListItemsParams) ([]*model.Item, error) {
 	for rows.Next() {
 		i := &model.Item{}
 		var unread int
-		if err := rows.Scan(&i.ID, &i.FeedID, &i.GUID, &i.Title, &i.Link, &i.Content, &i.PubDate, &unread, &i.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.FeedID,
+			&i.GUID,
+			&i.Title,
+			&i.Link,
+			&i.Content,
+			&i.PubDate,
+			&unread,
+			&i.CreatedAt,
+			&i.Bookmarked,
+			&i.ReadLater,
+		); err != nil {
 			return nil, err
 		}
 		i.Unread = intToBool(unread)
@@ -89,10 +105,24 @@ func (s *Store) GetItem(id int64) (*model.Item, error) {
 	i := &model.Item{}
 	var unread int
 	err := s.queryRow(`
-		SELECT id, feed_id, guid, title, link, content, pub_date, unread, created_at
+		SELECT id, feed_id, guid, title, link, content, pub_date, unread, created_at,
+		       EXISTS(SELECT 1 FROM bookmarks WHERE bookmarks.item_id = items.id) AS bookmarked,
+		       EXISTS(SELECT 1 FROM read_later_items WHERE read_later_items.item_id = items.id) AS read_later
 		FROM items
 		WHERE id = :id
-	`, sql.Named("id", id)).Scan(&i.ID, &i.FeedID, &i.GUID, &i.Title, &i.Link, &i.Content, &i.PubDate, &unread, &i.CreatedAt)
+	`, sql.Named("id", id)).Scan(
+		&i.ID,
+		&i.FeedID,
+		&i.GUID,
+		&i.Title,
+		&i.Link,
+		&i.Content,
+		&i.PubDate,
+		&unread,
+		&i.CreatedAt,
+		&i.Bookmarked,
+		&i.ReadLater,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%w: item", ErrNotFound)
@@ -389,7 +419,54 @@ type SearchItemResult struct {
 }
 
 func (s *Store) SearchItems(query string, limit int) ([]*SearchItemResult, error) {
-	return s.searchItemsLike(query, limit)
+	tsQuery := buildPrefixTSQuery(query)
+	if tsQuery == "" {
+		return s.searchItemsLike(query, limit)
+	}
+
+	return s.searchItemsFTS(tsQuery, limit)
+}
+
+var searchTokenPattern = regexp.MustCompile(`[\p{L}\p{N}_]+`)
+
+func buildPrefixTSQuery(query string) string {
+	tokens := searchTokenPattern.FindAllString(strings.ToLower(query), -1)
+	if len(tokens) == 0 {
+		return ""
+	}
+
+	parts := make([]string, 0, len(tokens))
+	for _, token := range tokens {
+		parts = append(parts, token+":*")
+	}
+	return strings.Join(parts, " & ")
+}
+
+func (s *Store) searchItemsFTS(query string, limit int) ([]*SearchItemResult, error) {
+	rows, err := s.query(`
+		WITH search_query AS (
+			SELECT to_tsquery('simple', :query) AS value
+		)
+		SELECT items.id, items.feed_id, items.title, items.pub_date
+		FROM items, search_query
+		WHERE to_tsvector('simple', COALESCE(items.title, '') || ' ' || COALESCE(items.content, '')) @@ search_query.value
+		ORDER BY items.pub_date DESC, items.id DESC
+		LIMIT :limit
+	`, sql.Named("query", query), sql.Named("limit", limit))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []*SearchItemResult{}
+	for rows.Next() {
+		i := &SearchItemResult{}
+		if err := rows.Scan(&i.ID, &i.FeedID, &i.Title, &i.PubDate); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	return items, rows.Err()
 }
 
 func (s *Store) searchItemsLike(query string, limit int) ([]*SearchItemResult, error) {

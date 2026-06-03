@@ -131,6 +131,9 @@ export const bookmarkAPI = {
     api.post<APIResponse<Bookmark>>("/bookmarks", data),
 
   delete: (id: number) => api.delete<void>(`/bookmarks/${id}`),
+
+  deleteByItem: (itemId: number) =>
+    api.delete<void>(`/bookmarks/-/item/${itemId}`),
 };
 
 // Read Later APIs
@@ -150,6 +153,9 @@ export const readLaterAPI = {
     api.post<APIResponse<ReadLaterItem>>("/read-later", data),
 
   delete: (id: number) => api.delete<void>(`/read-later/${id}`),
+
+  deleteByItem: (itemId: number) =>
+    api.delete<void>(`/read-later/-/item/${itemId}`),
 };
 
 // Search APIs

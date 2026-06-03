@@ -27,7 +27,7 @@ func (h *Handler) search(c *gin.Context) {
 		limit = parsed
 	}
 
-	feeds, err := h.store.SearchFeeds(q)
+	feeds, err := h.store.SearchFeeds(q, limit)
 	if err != nil {
 		internalError(c, err, "search feeds")
 		return

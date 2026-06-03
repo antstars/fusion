@@ -156,13 +156,14 @@ type SearchFeedResult struct {
 	SiteURL string `json:"site_url"`
 }
 
-func (s *Store) SearchFeeds(query string) ([]*SearchFeedResult, error) {
+func (s *Store) SearchFeeds(query string, limit int) ([]*SearchFeedResult, error) {
 	rows, err := s.query(`
 		SELECT id, name, link, site_url
 		FROM feeds
 		WHERE name LIKE :query
 		ORDER BY id
-	`, sql.Named("query", "%"+query+"%"))
+		LIMIT :limit
+	`, sql.Named("query", "%"+query+"%"), sql.Named("limit", limit))
 	if err != nil {
 		return nil, err
 	}

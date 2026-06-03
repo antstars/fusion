@@ -182,8 +182,12 @@ export function ArticleDetailContent({
 
   useEffect(() => {
     scrollViewportRef.current?.scrollTo({ top: 0 });
-    commitScrollState(initialReaderScrollState);
-    scheduleScrollStateUpdate();
+    const frame = window.requestAnimationFrame(() => {
+      commitScrollState(initialReaderScrollState);
+      scheduleScrollStateUpdate();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [article?.id, commitScrollState, scheduleScrollStateUpdate, selectedArticleId]);
 
   useEffect(() => {
@@ -307,7 +311,7 @@ export function ArticleDetailContent({
             </h2>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-0.5 rounded-lg border border-border/55 bg-background/35 p-0.5">
+          <div className="ml-auto flex max-w-[calc(100vw-4.25rem)] shrink-0 items-center gap-0.5 overflow-x-auto rounded-lg border border-border/55 bg-background/35 p-0.5 sm:max-w-none">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -459,7 +463,7 @@ export function ArticleDetailContent({
 
       <aside
         className="reader-progress-control app-panel"
-        aria-label="Reading progress"
+          aria-label="Reading progress"
       >
         <div
           className="h-20 w-1.5 overflow-hidden rounded-full bg-muted/80"
@@ -475,8 +479,8 @@ export function ArticleDetailContent({
           onClick={handleBackTop}
           disabled={!canBackTop}
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
-          aria-label="Back to top"
-          title="Back to top"
+          aria-label={t("article.detail.backTop")}
+          title={t("article.detail.backTop")}
         >
           <ArrowUp className="h-4 w-4" />
         </button>

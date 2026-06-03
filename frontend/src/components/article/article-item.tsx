@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   cn,
   extractFirstImageUrl,
@@ -22,13 +22,9 @@ interface ArticleThumbnailProps {
 }
 
 function ArticleThumbnail({ src }: ArticleThumbnailProps) {
-  const [hasFailed, setHasFailed] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
-  useEffect(() => {
-    setHasFailed(false);
-  }, [src]);
-
-  if (hasFailed) return null;
+  if (failedSrc === src) return null;
 
   return (
     <img
@@ -37,7 +33,7 @@ function ArticleThumbnail({ src }: ArticleThumbnailProps) {
       className="h-20 w-20 shrink-0 rounded-md object-cover"
       loading="lazy"
       decoding="async"
-      onError={() => setHasFailed(true)}
+      onError={() => setFailedSrc(src)}
     />
   );
 }

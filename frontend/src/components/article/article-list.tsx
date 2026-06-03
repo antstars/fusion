@@ -71,8 +71,8 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   const { feeds, getFeedById, isLoading: isFeedsLoading } = useFeedLookup();
   const refreshFeeds = useRefreshFeeds();
   const markItemsRead = useMarkItemsRead();
-  const { getBookmarkByItemId } = useBookmarkLookup();
-  const { getReadLaterByItemId } = useReadLaterLookup();
+  const { bookmarksQuery, getBookmarkByItemId } = useBookmarkLookup();
+  const { getReadLaterByItemId, readLaterQuery } = useReadLaterLookup();
 
   // Flatten infinite query pages
   const items = useMemo(
@@ -139,11 +139,27 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     [articles, getArticleUnread],
   );
 
-  const hasMore = isSavedMode ? false : itemsQuery.hasNextPage;
-  const isLoading = isSavedMode ? false : itemsQuery.isLoading;
-  const isLoadingMore = itemsQuery.isFetchingNextPage;
+  const hasMore = isStarredMode
+    ? bookmarksQuery.hasNextPage
+    : isReadLaterMode
+      ? readLaterQuery.hasNextPage
+      : itemsQuery.hasNextPage;
+  const isLoading = isStarredMode
+    ? bookmarksQuery.isLoading
+    : isReadLaterMode
+      ? readLaterQuery.isLoading
+      : itemsQuery.isLoading;
+  const isLoadingMore = isStarredMode
+    ? bookmarksQuery.isFetchingNextPage
+    : isReadLaterMode
+      ? readLaterQuery.isFetchingNextPage
+      : itemsQuery.isFetchingNextPage;
   const unreadDisplayCount = displayArticles.filter((a) => a.unread).length;
-  const fetchNextPage = itemsQuery.fetchNextPage;
+  const fetchNextPage = isStarredMode
+    ? bookmarksQuery.fetchNextPage
+    : isReadLaterMode
+      ? readLaterQuery.fetchNextPage
+      : itemsQuery.fetchNextPage;
 
   useEffect(() => {
     if (articleFilter !== "unread" || isSavedMode) return;
@@ -381,7 +397,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => itemsQuery.fetchNextPage()}
+                      onClick={() => fetchNextPage()}
                       disabled={isLoadingMore}
                       className="gap-2"
                     >

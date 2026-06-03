@@ -133,7 +133,7 @@ export function FeedGroupCard({
             onClick={() => onToggleGroup(group.id)}
             className="flex min-w-0 flex-1 items-center gap-2 text-left"
             aria-expanded={!isCollapsed}
-            aria-label={`Toggle group ${group.name}`}
+            aria-label={t("group.toggle", { name: group.name })}
           >
             {isCollapsed ? (
               <ChevronRight className="h-4 w-4 text-muted-foreground" />

@@ -238,11 +238,15 @@
 }
 
 .article-row[data-unread="true"] {
-  background: transparent;
+  background: color-mix(in oklch, var(--primary) 5%, transparent);
 }
 
 .article-row[data-selected="true"] {
-  background: oklch(0.88 0.005 248 / 86%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--primary) 14%, transparent),
+    oklch(0.88 0.005 248 / 86%)
+  );
   border-color: color-mix(in oklch, var(--primary) 32%, transparent);
 }
 
@@ -265,7 +269,7 @@
 }
 
 .article-row[data-unread="true"] [aria-hidden="true"] {
-  box-shadow: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 12%, transparent);
 }
 
 .article-row:hover [aria-hidden="true"] {

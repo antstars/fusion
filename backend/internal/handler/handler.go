@@ -172,11 +172,13 @@ func (h *Handler) SetupRouter() *gin.Engine {
 
 			auth.GET("/bookmarks", h.listBookmarks)
 			auth.POST("/bookmarks", h.createBookmark)
+			auth.DELETE("/bookmarks/-/item/:item_id", h.deleteBookmarkByItemID)
 			auth.GET("/bookmarks/:id", h.getBookmark)
 			auth.DELETE("/bookmarks/:id", h.deleteBookmark)
 
 			auth.GET("/read-later", h.listReadLaterItems)
 			auth.POST("/read-later", h.createReadLaterItem)
+			auth.DELETE("/read-later/-/item/:item_id", h.deleteReadLaterItemByItemID)
 			auth.GET("/read-later/:id", h.getReadLaterItem)
 			auth.DELETE("/read-later/:id", h.deleteReadLaterItem)
 		}

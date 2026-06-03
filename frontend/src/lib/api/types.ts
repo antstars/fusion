@@ -59,6 +59,8 @@ export interface Item {
   pub_date: number;
   unread: boolean;
   created_at: number;
+  bookmarked: boolean;
+  read_later: boolean;
 }
 
 export interface Bookmark {
