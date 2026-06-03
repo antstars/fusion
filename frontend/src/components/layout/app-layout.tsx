@@ -5,6 +5,7 @@ import { Sidebar } from "./sidebar";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRefreshEvents } from "@/hooks/use-refresh-events";
 import { useUrlState } from "@/hooks/use-url-state";
 import { useUIStore } from "@/store/ui";
 
@@ -77,8 +78,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const shouldRenderImportOpmlDialog = useHasBeenEnabled(isImportOpmlOpen);
   const shouldRenderShortcutsDialog = useHasBeenEnabled(isShortcutsOpen);
 
-  // Register global keyboard shortcuts
   useKeyboardShortcuts();
+  useRefreshEvents();
 
   // Close mobile sidebar on navigation
   const location = useLocation();

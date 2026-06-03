@@ -112,10 +112,13 @@ func (h *Handler) createFeed(c *gin.Context) {
 	go func(feedID int64) {
 		ctx, cancel := context.WithTimeout(context.Background(), refreshTimeout)
 		defer cancel()
-		if err := h.puller.RefreshFeed(ctx, feedID); err != nil {
-			slog.Warn("initial feed pull failed", "feed_id", feedID, "error", err)
-		}
+		err := h.puller.RefreshFeed(ctx, feedID)
 		h.invalidateReadCache(context.Background())
+		if err != nil {
+			slog.Warn("initial feed pull failed", "feed_id", feedID, "error", err)
+			return
+		}
+		h.publishFeedRefreshCompleted(feedID)
 	}(feed.ID)
 
 	dataResponse(c, feed)
@@ -335,6 +338,9 @@ func (h *Handler) refreshFeed(c *gin.Context) {
 		}
 		h.invalidateReadCache(context.Background())
 		h.refreshJobs.finish(jobID, refreshErr)
+		if refreshErr == nil {
+			h.publishFeedRefreshCompleted(feedID)
+		}
 	}(job.ID, id)
 }
 
@@ -356,6 +362,9 @@ func (h *Handler) refreshAllFeeds(c *gin.Context) {
 		}
 		h.invalidateReadCache(context.Background())
 		h.refreshJobs.finish(jobID, refreshErr)
+		if refreshErr == nil {
+			h.publishAllRefreshCompleted()
+		}
 	}(job.ID)
 }
 
@@ -406,10 +415,13 @@ func (h *Handler) batchCreateFeeds(c *gin.Context) {
 		go func(feedID int64) {
 			ctx, cancel := context.WithTimeout(context.Background(), refreshTimeout)
 			defer cancel()
-			if err := h.puller.RefreshFeed(ctx, feedID); err != nil {
-				slog.Warn("initial feed pull failed", "feed_id", feedID, "error", err)
-			}
+			err := h.puller.RefreshFeed(ctx, feedID)
 			h.invalidateReadCache(context.Background())
+			if err != nil {
+				slog.Warn("initial feed pull failed", "feed_id", feedID, "error", err)
+				return
+			}
+			h.publishFeedRefreshCompleted(feedID)
 		}(id)
 	}
 

@@ -135,3 +135,11 @@ func TestCacheMiddlewareFallsBackWhenCacheFails(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
 	}
 }
+
+func TestRefreshEventsPathIsNotCacheable(t *testing.T) {
+	h := &Handler{}
+
+	if h.isCacheablePath("/api/feeds/refresh-events") {
+		t.Fatal("expected refresh events path to bypass cache")
+	}
+}

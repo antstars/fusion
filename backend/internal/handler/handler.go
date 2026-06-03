@@ -37,7 +37,8 @@ type Handler struct {
 	limiter   *loginLimiter
 	lastSweep int64
 
-	refreshJobs *refreshJobStore
+	refreshJobs   *refreshJobStore
+	refreshEvents *refreshEventBroker
 }
 
 func New(store *store.Store, config *config.Config, puller interface {
@@ -81,6 +82,7 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 		sessions:             make(map[string]int64),
 		limiter:              newLoginLimiter(config.LoginRateLimit, config.LoginWindow, config.LoginBlock),
 		refreshJobs:          newRefreshJobStore(),
+		refreshEvents:        newRefreshEventBroker(),
 	}
 
 	if h.allowAnonAPI {
@@ -153,6 +155,7 @@ func (h *Handler) SetupRouter() *gin.Engine {
 			auth.POST("/feeds", h.createFeed)
 			auth.POST("/feeds/batch", h.batchCreateFeeds)
 			auth.POST("/feeds/refresh", h.refreshAllFeeds)
+			auth.GET("/feeds/refresh-events", h.streamRefreshEvents)
 			auth.GET("/feeds/refresh-jobs/:id", h.getRefreshJob)
 			auth.GET("/feeds/:id", h.getFeed)
 			auth.PATCH("/feeds/:id", h.updateFeed)
@@ -233,6 +236,9 @@ func (h *Handler) cacheMiddleware() gin.HandlerFunc {
 }
 
 func (h *Handler) isCacheablePath(path string) bool {
+	if path == "/api/feeds/refresh-events" {
+		return false
+	}
 	if path == "/api/feeds/refresh-jobs" || strings.HasPrefix(path, "/api/feeds/refresh-jobs/") {
 		return false
 	}

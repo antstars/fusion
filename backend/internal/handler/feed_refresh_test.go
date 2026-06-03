@@ -46,11 +46,14 @@ func (p *refreshJobTestPuller) RefreshFeed(_ context.Context, feedID int64) erro
 func TestRefreshAllJobLifecycle(t *testing.T) {
 	puller := newRefreshJobTestPuller()
 	h := &Handler{
-		config:      &config.Config{},
-		cache:       cache.NoopCache{},
-		puller:      puller,
-		refreshJobs: newRefreshJobStore(),
+		config:        &config.Config{},
+		cache:         cache.NoopCache{},
+		puller:        puller,
+		refreshJobs:   newRefreshJobStore(),
+		refreshEvents: newRefreshEventBroker(),
 	}
+	eventSubID, events := h.refreshEvents.subscribe()
+	defer h.refreshEvents.unsubscribe(eventSubID)
 	r := newTestRouter()
 	r.POST("/api/feeds/refresh", h.refreshAllFeeds)
 	r.GET("/api/feeds/refresh-jobs/:id", h.getRefreshJob)
@@ -78,6 +81,10 @@ func TestRefreshAllJobLifecycle(t *testing.T) {
 
 	close(puller.allRelease)
 	waitForRefreshJobStatus(t, r, firstJob.ID, refreshJobStatusCompleted)
+	event := waitForRefreshEvent(t, events)
+	if event.Type != "refresh_completed" || event.Scope != refreshEventScopeAll || event.FeedID != nil {
+		t.Fatalf("unexpected refresh event: %#v", event)
+	}
 }
 
 func TestRefreshFeedJobStoreLifecycle(t *testing.T) {
