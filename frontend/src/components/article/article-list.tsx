@@ -99,11 +99,9 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     if (articleFilter !== "unread") return sourceArticles;
 
     return sourceArticles.filter(
-      (article) =>
-        (unreadOverrides[article.id] ?? article.unread) ||
-        article.id === selectedArticleId,
+      (article) => unreadOverrides[article.id] ?? article.unread,
     );
-  }, [articleFilter, selectedArticleId, sourceArticles, unreadOverrides]);
+  }, [articleFilter, sourceArticles, unreadOverrides]);
   const articles = useMemo(() => {
     if (isSavedMode) return filteredArticles;
 

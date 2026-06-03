@@ -292,7 +292,10 @@ function useSetItemsReadState(
       clearUnreadOverrides(ids);
     },
     onSettled: async () => {
-      await qc.invalidateQueries({ queryKey: queryKeys.feeds.all });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.feeds.all }),
+        qc.invalidateQueries({ queryKey: queryKeys.items.lists() }),
+      ]);
     },
   });
 }

@@ -16,5 +16,9 @@ export async function refreshFeedSyncQueries(queryClient: QueryClient) {
       queryKey: queryKeys.items.lists(),
       type: "active",
     }),
+    queryClient.refetchQueries({
+      queryKey: queryKeys.items.details(),
+      type: "active",
+    }),
   ]);
 }
