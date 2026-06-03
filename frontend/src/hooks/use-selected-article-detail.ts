@@ -126,7 +126,6 @@ export function useSelectedArticleDetail() {
     ? toSafeExternalUrl(displayArticle.link)
     : null;
   const displayArticleId = displayArticle?.id ?? null;
-  const displayArticleUnread = displayArticle?.unread ?? false;
 
   const handleToggleRead = async () => {
     if (!displayArticle || !canToggleRead) return;
@@ -194,13 +193,13 @@ export function useSelectedArticleDetail() {
   }, [displayArticleId]);
 
   useEffect(() => {
-    if (displayArticleId === null || !canToggleRead || !displayArticleUnread) {
+    if (selectedArticleId === null || selectedArticleId <= 0) {
       return;
     }
-    if (manualUnreadHoldRef.current === displayArticleId) return;
-    if (pendingAutoReadItemIdsRef.current.has(displayArticleId)) return;
+    if (manualUnreadHoldRef.current === selectedArticleId) return;
+    if (pendingAutoReadItemIdsRef.current.has(selectedArticleId)) return;
 
-    const articleId = displayArticleId;
+    const articleId = selectedArticleId;
     const timer = window.setTimeout(() => {
       pendingAutoReadItemIdsRef.current.add(articleId);
       void markRead.mutateAsync([articleId]).catch((error) => {
@@ -211,7 +210,7 @@ export function useSelectedArticleDetail() {
     }, autoMarkReadDelayMs);
 
     return () => window.clearTimeout(timer);
-  }, [canToggleRead, displayArticleId, displayArticleUnread, markRead]);
+  }, [markRead, selectedArticleId]);
 
   const { goToNext, goToPrevious, hasNext, hasPrevious } =
     useArticleNavigation(articleIds, {
