@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type SyntheticEvent,
+} from "react";
 import {
   ArrowUp,
   Circle,
@@ -36,6 +44,13 @@ interface FailedImageState {
   urls: ReadonlySet<string>;
 }
 
+interface ArticleBodyProps {
+  html: string;
+  onContentRendered: () => void;
+  onImageError: (event: SyntheticEvent<HTMLDivElement>) => void;
+  onImageLoad: (event: SyntheticEvent<HTMLDivElement>) => void;
+}
+
 const initialReaderScrollState: ReaderScrollState = {
   scrollProgress: 0,
   showScrolledTitle: false,
@@ -57,12 +72,33 @@ function getLinkDomain(url: string) {
   }
 }
 
+const ArticleBody = memo(function ArticleBody({
+  html,
+  onContentRendered,
+  onImageError,
+  onImageLoad,
+}: ArticleBodyProps) {
+  useEffect(() => {
+    onContentRendered();
+  }, [html, onContentRendered]);
+
+  return (
+    <div
+      className="prose prose-neutral mt-8 min-w-0 max-w-none break-words dark:prose-invert"
+      onErrorCapture={onImageError}
+      onLoadCapture={onImageLoad}
+      dangerouslySetInnerHTML={{
+        __html: html,
+      }}
+    />
+  );
+});
+
 export function ArticleDetailContent({
   showCloseButton = false,
 }: ArticleDetailContentProps) {
   const { t } = useI18n();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
-  const articleContentRef = useRef<HTMLElement>(null);
   const titleBlockRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollStateRef = useRef<ReaderScrollState>(initialReaderScrollState);
@@ -189,22 +225,19 @@ export function ArticleDetailContent({
     });
   }, [articleContent, failedImageUrls, safeArticleLink, t]);
 
-  useEffect(() => {
-    const articleElement = articleContentRef.current;
-    if (!articleElement) return;
-
-    const handleImageLoad = (event: Event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLImageElement)) return;
-      if (!articleElement.contains(target)) return;
+  const handleArticleImageLoad = useCallback(
+    (event: SyntheticEvent<HTMLDivElement>) => {
+      if (!(event.target instanceof HTMLImageElement)) return;
 
       scheduleScrollStateUpdate();
-    };
+    },
+    [scheduleScrollStateUpdate],
+  );
 
-    const handleImageError = (event: Event) => {
+  const handleArticleImageError = useCallback(
+    (event: SyntheticEvent<HTMLDivElement>) => {
       const target = event.target;
       if (!(target instanceof HTMLImageElement)) return;
-      if (!articleElement.contains(target)) return;
 
       const failedUrl = target.currentSrc || target.src;
       if (failedUrl) {
@@ -228,28 +261,9 @@ export function ArticleDetailContent({
         });
       }
       scheduleScrollStateUpdate();
-    };
-
-    articleElement.addEventListener("load", handleImageLoad, true);
-    articleElement.addEventListener("error", handleImageError, true);
-    for (const img of articleElement.querySelectorAll("img")) {
-      if (img.complete) {
-        scheduleScrollStateUpdate();
-        break;
-      }
-    }
-
-    return () => {
-      articleElement.removeEventListener("load", handleImageLoad, true);
-      articleElement.removeEventListener("error", handleImageError, true);
-    };
-  }, [
-    articleContent,
-    articleHtml,
-    articleId,
-    articleLink,
-    scheduleScrollStateUpdate,
-  ]);
+    },
+    [articleContent, articleId, articleLink, scheduleScrollStateUpdate],
+  );
 
   const handleBackTop = () => {
     scrollViewportRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -388,7 +402,6 @@ export function ArticleDetailContent({
         viewportRef={scrollViewportRef}
       >
         <article
-          ref={articleContentRef}
           className="mx-auto min-w-0 max-w-[740px] px-5 py-8 sm:px-10 sm:py-12"
         >
           <div ref={titleBlockRef} className="space-y-3">
@@ -435,11 +448,11 @@ export function ArticleDetailContent({
             </div>
           </div>
 
-          <div
-            className="prose prose-neutral mt-8 min-w-0 max-w-none break-words dark:prose-invert"
-            dangerouslySetInnerHTML={{
-              __html: articleHtml,
-            }}
+          <ArticleBody
+            html={articleHtml}
+            onContentRendered={scheduleScrollStateUpdate}
+            onImageError={handleArticleImageError}
+            onImageLoad={handleArticleImageLoad}
           />
         </article>
       </ScrollArea>
