@@ -70,16 +70,18 @@ export function useSelectedArticleDetail() {
     if (articleFilter !== "unread") return sourceArticles;
 
     return sourceArticles.filter(
-      (item) => unreadOverrides[item.id] ?? item.unread,
+      (item) =>
+        (unreadOverrides[item.id] ?? item.unread) ||
+        item.id === selectedArticleId,
     );
-  }, [articleFilter, sourceArticles, unreadOverrides]);
+  }, [articleFilter, selectedArticleId, sourceArticles, unreadOverrides]);
   const listArticles = useMemo(() => {
     if (isSavedMode) return filteredArticles;
 
     return dedupeArticlesByIdentity(filteredArticles, selectedArticleId);
   }, [filteredArticles, isSavedMode, selectedArticleId]);
 
-  const markRead = useMarkItemsRead();
+  const markRead = useMarkItemsRead({ keepReadItemsInUnreadLists: true });
   const markUnread = useMarkItemsUnread();
   const pendingAutoReadItemIdsRef = useRef(new Set<number>());
   const manualUnreadHoldRef = useRef<number | null>(null);
