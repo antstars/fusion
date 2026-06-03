@@ -21,6 +21,7 @@ import {
   useMarkItemsUnread,
 } from "@/queries/items";
 import type { Item } from "@/lib/api";
+import { dedupeArticlesByIdentity } from "@/lib/article-dedupe";
 import { toSafeExternalUrl } from "@/lib/safe-url";
 import { useArticleNavigation } from "./use-keyboard";
 import { useUrlState } from "./use-url-state";
@@ -65,7 +66,7 @@ export function useSelectedArticleDetail() {
     : isReadLaterMode
       ? readLaterArticles
       : articles;
-  const listArticles = useMemo(() => {
+  const filteredArticles = useMemo(() => {
     if (articleFilter !== "unread") return sourceArticles;
 
     return sourceArticles.filter(
@@ -74,6 +75,11 @@ export function useSelectedArticleDetail() {
         item.id === selectedArticleId,
     );
   }, [articleFilter, selectedArticleId, sourceArticles, unreadOverrides]);
+  const listArticles = useMemo(() => {
+    if (isSavedMode) return filteredArticles;
+
+    return dedupeArticlesByIdentity(filteredArticles, selectedArticleId);
+  }, [filteredArticles, isSavedMode, selectedArticleId]);
 
   const markRead = useMarkItemsRead({ keepReadItemsInUnreadLists: true });
   const markUnread = useMarkItemsUnread();

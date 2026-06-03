@@ -28,6 +28,7 @@ import {
 } from "@/queries/read-later";
 import { queryKeys } from "@/queries/keys";
 import { getFaviconUrl } from "@/lib/api/favicon";
+import { dedupeArticlesByIdentity } from "@/lib/article-dedupe";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/store";
@@ -94,7 +95,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     : isReadLaterMode
       ? readLaterArticles
       : items;
-  const articles = useMemo(() => {
+  const filteredArticles = useMemo(() => {
     if (articleFilter !== "unread") return sourceArticles;
 
     return sourceArticles.filter(
@@ -103,6 +104,11 @@ export function ArticleList({ compact = false }: ArticleListProps) {
         article.id === selectedArticleId,
     );
   }, [articleFilter, selectedArticleId, sourceArticles, unreadOverrides]);
+  const articles = useMemo(() => {
+    if (isSavedMode) return filteredArticles;
+
+    return dedupeArticlesByIdentity(filteredArticles, selectedArticleId);
+  }, [filteredArticles, isSavedMode, selectedArticleId]);
   const getArticleUnread = useCallback(
     (article: Item) => {
       const unreadOverride = unreadOverrides[article.id];

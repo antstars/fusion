@@ -287,6 +287,122 @@ func TestCreateItem(t *testing.T) {
 	}
 }
 
+func TestBatchCreateItemsIgnoreSkipsSameFeedDuplicateLinks(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Duplicate Link Group")
+	feed := mustCreateFeed(t, store, group.ID, "Duplicate Link Feed", "https://example.com/duplicate-link.xml", "https://example.com", "")
+
+	created, err := store.BatchCreateItemsIgnore(feed.ID, []BatchCreateItemInput{
+		{
+			GUID:    "guid-1",
+			Title:   "Original",
+			Link:    "https://example.com/articles/1",
+			Content: "Content 1",
+			PubDate: 100,
+		},
+		{
+			GUID:    "guid-2",
+			Title:   "Same Link",
+			Link:    "https://example.com/articles/1",
+			Content: "Content 2",
+			PubDate: 200,
+		},
+	})
+	if err != nil {
+		t.Fatalf("BatchCreateItemsIgnore() failed: %v", err)
+	}
+	if created != 1 {
+		t.Fatalf("expected 1 created item, got %d", created)
+	}
+
+	items, err := store.ListItems(ListItemsParams{FeedID: &feed.ID})
+	if err != nil {
+		t.Fatalf("ListItems() failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].GUID != "guid-1" {
+		t.Fatalf("expected original item to be kept, got guid=%q", items[0].GUID)
+	}
+
+	created, err = store.BatchCreateItemsIgnore(feed.ID, []BatchCreateItemInput{
+		{
+			GUID:    "guid-3",
+			Title:   "Existing Link",
+			Link:    "https://example.com/articles/1",
+			Content: "Content 3",
+			PubDate: 300,
+		},
+	})
+	if err != nil {
+		t.Fatalf("BatchCreateItemsIgnore() with existing link failed: %v", err)
+	}
+	if created != 0 {
+		t.Fatalf("expected existing link to be skipped, got %d created", created)
+	}
+}
+
+func TestBatchCreateItemsIgnoreAllowsSameLinkAcrossFeeds(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Cross Feed Link Group")
+	feed1 := mustCreateFeed(t, store, group.ID, "Feed 1", "https://example.com/cross-feed-1.xml", "https://example.com", "")
+	feed2 := mustCreateFeed(t, store, group.ID, "Feed 2", "https://example.com/cross-feed-2.xml", "https://example.com", "")
+	link := "https://example.com/shared"
+
+	created, err := store.BatchCreateItemsIgnore(feed1.ID, []BatchCreateItemInput{
+		{GUID: "feed-1-guid", Title: "Shared", Link: link, Content: "Feed 1", PubDate: 100},
+	})
+	if err != nil {
+		t.Fatalf("BatchCreateItemsIgnore() for feed1 failed: %v", err)
+	}
+	if created != 1 {
+		t.Fatalf("expected 1 feed1 item, got %d", created)
+	}
+
+	created, err = store.BatchCreateItemsIgnore(feed2.ID, []BatchCreateItemInput{
+		{GUID: "feed-2-guid", Title: "Shared", Link: link, Content: "Feed 2", PubDate: 100},
+	})
+	if err != nil {
+		t.Fatalf("BatchCreateItemsIgnore() for feed2 failed: %v", err)
+	}
+	if created != 1 {
+		t.Fatalf("expected 1 feed2 item, got %d", created)
+	}
+
+	items, err := store.ListItems(ListItemsParams{})
+	if err != nil {
+		t.Fatalf("ListItems() failed: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("expected 2 items across feeds, got %d", len(items))
+	}
+}
+
+func TestBatchCreateItemsIgnoreKeepsEmptyLinksGuidScoped(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Empty Link Group")
+	feed := mustCreateFeed(t, store, group.ID, "Empty Link Feed", "https://example.com/empty-link.xml", "https://example.com", "")
+
+	created, err := store.BatchCreateItemsIgnore(feed.ID, []BatchCreateItemInput{
+		{GUID: "empty-1", Title: "Empty Link 1", Link: "", Content: "Content 1", PubDate: 100},
+		{GUID: "empty-2", Title: "Empty Link 2", Link: "", Content: "Content 2", PubDate: 200},
+		{GUID: "empty-2", Title: "Empty Link Duplicate GUID", Link: "", Content: "Content 3", PubDate: 300},
+	})
+	if err != nil {
+		t.Fatalf("BatchCreateItemsIgnore() failed: %v", err)
+	}
+	if created != 2 {
+		t.Fatalf("expected empty links to dedupe by GUID only, got %d created", created)
+	}
+}
+
 func TestUpdateItemUnread(t *testing.T) {
 	store, _ := setupTestDB(t)
 	defer closeStore(t, store)

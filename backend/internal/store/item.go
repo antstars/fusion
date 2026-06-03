@@ -155,7 +155,8 @@ type BatchCreateItemInput struct {
 	PubDate int64
 }
 
-// BatchCreateItemsIgnore inserts items in one transaction and ignores duplicates by (feed_id, guid).
+// BatchCreateItemsIgnore inserts items in one transaction and ignores duplicates by
+// (feed_id, guid) or by same-feed non-empty link.
 // Returns the number of newly inserted rows.
 func (s *Store) BatchCreateItemsIgnore(feedID int64, inputs []BatchCreateItemInput) (int, error) {
 	if len(inputs) == 0 {
@@ -172,7 +173,14 @@ func (s *Store) BatchCreateItemsIgnore(feedID int64, inputs []BatchCreateItemInp
 	for _, input := range inputs {
 		result, err := s.execWith(tx, `
 			INSERT INTO items (feed_id, guid, title, link, content, pub_date)
-			VALUES (:feed_id, :guid, :title, :link, :content, :pub_date)
+			SELECT :feed_id, :guid, :title, :link, :content, :pub_date
+			WHERE :link = ''
+			   OR NOT EXISTS (
+			       SELECT 1
+			       FROM items
+			       WHERE feed_id = :feed_id
+			         AND link = :link
+			   )
 			ON CONFLICT(feed_id, guid) DO NOTHING
 		`,
 			sql.Named("feed_id", feedID),
