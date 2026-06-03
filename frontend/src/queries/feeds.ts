@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { feedAPI, type Feed, type RefreshJob } from "@/lib/api";
+import { refreshFeedSyncQueries } from "./feed-sync";
 import { queryKeys } from "./keys";
 
 const refreshJobPollIntervalMs = 1000;
@@ -211,10 +212,7 @@ export function useRefreshFeeds() {
       }
     },
     onSuccess: async () => {
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: queryKeys.feeds.all }),
-        qc.invalidateQueries({ queryKey: queryKeys.items.all }),
-      ]);
+      await refreshFeedSyncQueries(qc);
     },
   });
 }
@@ -250,10 +248,7 @@ export function useRefreshFeed() {
       }
     },
     onSuccess: async () => {
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: queryKeys.feeds.all }),
-        qc.invalidateQueries({ queryKey: queryKeys.items.all }),
-      ]);
+      await refreshFeedSyncQueries(qc);
     },
   });
 }

@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/queries/keys";
+import { refreshFeedSyncQueries } from "@/queries/feed-sync";
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 const refreshEventsURL = `${apiBase}/feeds/refresh-events`;
-const refreshInvalidationDelayMs = 200;
+const refreshDelayMs = 200;
 
 interface RefreshCompletedEvent {
   type: "refresh_completed";
@@ -15,7 +15,7 @@ interface RefreshCompletedEvent {
 
 export function useRefreshEvents() {
   const queryClient = useQueryClient();
-  const invalidationTimerRef = useRef<number | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("EventSource" in window)) return;
@@ -24,18 +24,15 @@ export function useRefreshEvents() {
       withCredentials: true,
     });
 
-    const scheduleInvalidation = () => {
-      if (invalidationTimerRef.current !== null) {
-        window.clearTimeout(invalidationTimerRef.current);
+    const scheduleRefresh = () => {
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
       }
 
-      invalidationTimerRef.current = window.setTimeout(() => {
-        invalidationTimerRef.current = null;
-        void Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.items.all }),
-        ]);
-      }, refreshInvalidationDelayMs);
+      refreshTimerRef.current = window.setTimeout(() => {
+        refreshTimerRef.current = null;
+        void refreshFeedSyncQueries(queryClient);
+      }, refreshDelayMs);
     };
 
     const handleRefreshCompleted = (event: Event) => {
@@ -47,7 +44,7 @@ export function useRefreshEvents() {
         return;
       }
 
-      scheduleInvalidation();
+      scheduleRefresh();
     };
 
     eventSource.addEventListener(refreshCompletedEventName, handleRefreshCompleted);
@@ -59,9 +56,9 @@ export function useRefreshEvents() {
       );
       eventSource.close();
 
-      if (invalidationTimerRef.current !== null) {
-        window.clearTimeout(invalidationTimerRef.current);
-        invalidationTimerRef.current = null;
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
       }
     };
   }, [queryClient]);
