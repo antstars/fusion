@@ -178,10 +178,6 @@ export function ArticleList({ compact = false }: ArticleListProps) {
       return;
     }
     if (unreadDisplayCount >= articlePageSize) return;
-    if (itemsQuery.data && unreadDisplayCount === 0) {
-      const total = itemsQuery.data.pages.at(-1)?.total ?? 0;
-      if (total === 0) return;
-    }
 
     void fetchNextPage();
   }, [

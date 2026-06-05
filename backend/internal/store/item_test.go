@@ -67,8 +67,8 @@ func TestListItems(t *testing.T) {
 		}
 	})
 
-	t.Run("pagination with limit and offset", func(t *testing.T) {
-		items, err := store.ListItems(ListItemsParams{Limit: 2, Offset: 0})
+	t.Run("pagination with cursor", func(t *testing.T) {
+		items, err := store.ListItems(ListItemsParams{Limit: 2, OrderBy: "pub_date"})
 		if err != nil {
 			t.Fatalf("ListItems() failed: %v", err)
 		}
@@ -76,12 +76,20 @@ func TestListItems(t *testing.T) {
 			t.Errorf("expected 2 items with limit=2, got %d", len(items))
 		}
 
-		items2, err := store.ListItems(ListItemsParams{Limit: 2, Offset: 2})
+		last := items[len(items)-1]
+		items2, err := store.ListItems(ListItemsParams{
+			Limit:   2,
+			OrderBy: "pub_date",
+			Cursor:  &ListItemsCursor{Value: last.PubDate, ID: last.ID},
+		})
 		if err != nil {
 			t.Fatalf("ListItems() failed: %v", err)
 		}
 		if len(items2) != 1 {
-			t.Errorf("expected 1 item with offset=2, got %d", len(items2))
+			t.Errorf("expected 1 item after cursor, got %d", len(items2))
+		}
+		if items2[0].ID != item1.ID {
+			t.Fatalf("expected final item after cursor, got id=%d", items2[0].ID)
 		}
 	})
 

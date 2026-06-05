@@ -42,7 +42,6 @@ const ALLOWED_ATTR = [
   "src",
   "alt",
   "title",
-  "class",
   "target",
   "rel",
   "width",

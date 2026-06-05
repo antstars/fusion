@@ -15,7 +15,8 @@ import (
 )
 
 type Store struct {
-	db *sql.DB
+	db                       *sql.DB
+	itemsSearchVectorIndexed bool
 }
 
 func New(databaseURL string) (*Store, error) {
@@ -47,8 +48,23 @@ func NewWithPool(databaseURL string, pool config.DatabasePoolConfig) (*Store, er
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate database: %w", err)
 	}
+	if err := s.detectCapabilities(); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 
 	return s, nil
+}
+
+func (s *Store) detectCapabilities() error {
+	return s.queryRow(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_name = 'items'
+			  AND column_name = 'search_vector'
+		)
+	`).Scan(&s.itemsSearchVectorIndexed)
 }
 
 func (s *Store) Close() error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -14,12 +15,14 @@ import (
 )
 
 type fakeCache struct {
-	mu        sync.Mutex
-	values    map[string][]byte
-	getErr    error
-	setErr    error
-	deleteErr error
-	deletes   int
+	mu         sync.Mutex
+	values     map[string][]byte
+	getErr     error
+	setErr     error
+	deleteErr  error
+	incrErr    error
+	deletes    int
+	increments int
 }
 
 func newFakeCache() *fakeCache {
@@ -47,6 +50,35 @@ func (c *fakeCache) Set(_ context.Context, key string, value []byte, _ time.Dura
 	}
 	c.values[key] = append([]byte(nil), value...)
 	return nil
+}
+
+func (c *fakeCache) Delete(_ context.Context, key string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.deleteErr != nil {
+		return c.deleteErr
+	}
+	delete(c.values, key)
+	return nil
+}
+
+func (c *fakeCache) Increment(_ context.Context, key string) (int64, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.increments++
+	if c.incrErr != nil {
+		return 0, c.incrErr
+	}
+	value := int64(1)
+	if raw, ok := c.values[key]; ok {
+		parsed, err := strconv.ParseInt(string(raw), 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		value = parsed + 1
+	}
+	c.values[key] = []byte(strconv.FormatInt(value, 10))
+	return value, nil
 }
 
 func (c *fakeCache) DeletePrefix(_ context.Context, prefix string) error {
@@ -110,11 +142,14 @@ func TestCacheMiddlewareInvalidatesAfterMutation(t *testing.T) {
 	performRequest(r, http.MethodGet, "/api/groups", nil, nil, &http.Cookie{Name: "session", Value: "s1"})
 	performRequest(r, http.MethodPost, "/api/groups", strings.NewReader(`{"name":"Work"}`), map[string]string{"Content-Type": "application/json"})
 
-	if responseCache.deletes != 1 {
-		t.Fatalf("expected one cache invalidation, got %d", responseCache.deletes)
+	if responseCache.increments != 1 {
+		t.Fatalf("expected one cache version increment, got %d", responseCache.increments)
 	}
-	if len(responseCache.values) != 0 {
-		t.Fatalf("expected cache to be empty after invalidation, got %d entries", len(responseCache.values))
+	if responseCache.deletes != 0 {
+		t.Fatalf("expected no prefix deletes, got %d", responseCache.deletes)
+	}
+	if _, ok := responseCache.values[readCacheVersionKey]; !ok {
+		t.Fatal("expected cache version key to be set")
 	}
 }
 

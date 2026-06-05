@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 const (
 	sessionTTL           = 30 * 24 * time.Hour
 	sessionSweepInterval = 60 * time.Second
+	sessionCachePrefix   = "fusion:session:"
 )
 
 type loginState struct {
@@ -148,7 +150,19 @@ func (h *Handler) login(c *gin.Context) {
 	dataResponse(c, gin.H{"message": "logged in"})
 }
 
-func (h *Handler) isSessionValid(sessionID string) bool {
+func sessionCacheKey(sessionID string) string {
+	return sessionCachePrefix + sessionID
+}
+
+func (h *Handler) isSessionValid(ctx context.Context, sessionID string) bool {
+	if h.sessionCache != nil {
+		_, err := h.sessionCache.Get(ctx, sessionCacheKey(sessionID))
+		if err == nil {
+			return true
+		}
+		return false
+	}
+
 	nowSec := time.Now().Unix()
 
 	h.mu.Lock()
@@ -188,11 +202,23 @@ func (h *Handler) createSession(c *gin.Context) {
 	expiresAt := now.Add(sessionTTL).Unix()
 	sessionID := uuid.New().String()
 
+	if h.sessionCache != nil {
+		if err := h.sessionCache.Set(c.Request.Context(), sessionCacheKey(sessionID), []byte("1"), sessionTTL); err == nil {
+			setSessionCookie(c, sessionID)
+			return
+		}
+		h.sessionCache = nil
+	}
+
 	h.mu.Lock()
 	h.sweepExpiredSessionsLocked(now.Unix())
 	h.sessions[sessionID] = expiresAt
 	h.mu.Unlock()
 
+	setSessionCookie(c, sessionID)
+}
+
+func setSessionCookie(c *gin.Context, sessionID string) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "session",
 		Value:    sessionID,
@@ -207,9 +233,13 @@ func (h *Handler) createSession(c *gin.Context) {
 func (h *Handler) logout(c *gin.Context) {
 	sessionID, err := c.Cookie("session")
 	if err == nil {
-		h.mu.Lock()
-		delete(h.sessions, sessionID)
-		h.mu.Unlock()
+		if h.sessionCache != nil {
+			_ = h.sessionCache.Delete(c.Request.Context(), sessionCacheKey(sessionID))
+		} else {
+			h.mu.Lock()
+			delete(h.sessions, sessionID)
+			h.mu.Unlock()
+		}
 	}
 
 	http.SetCookie(c.Writer, &http.Cookie{

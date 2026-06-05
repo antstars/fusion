@@ -146,3 +146,53 @@ func TestAuthMiddleware(t *testing.T) {
 		})
 	}
 }
+
+func TestRedisBackedSessionLifecycle(t *testing.T) {
+	sessionCache := newFakeCache()
+	h := newTestSessionHandler(t, "secret")
+	h.sessionCache = sessionCache
+
+	r := newTestRouter()
+	r.POST("/api/sessions", h.login)
+	login := performRequest(
+		r,
+		http.MethodPost,
+		"/api/sessions",
+		strings.NewReader(`{"password":"secret"}`),
+		map[string]string{"Content-Type": "application/json"},
+	)
+	if login.Code != http.StatusOK {
+		t.Fatalf("login status = %d", login.Code)
+	}
+
+	cookies := login.Result().Cookies()
+	if len(cookies) == 0 {
+		t.Fatal("expected login to set a session cookie")
+	}
+	sessionCookie := cookies[0]
+	if _, ok := sessionCache.values[sessionCacheKey(sessionCookie.Value)]; !ok {
+		t.Fatal("expected session to be stored in cache")
+	}
+	if _, ok := h.sessions[sessionCookie.Value]; ok {
+		t.Fatal("expected Redis-backed session not to be stored in memory")
+	}
+
+	protected := newTestRouter()
+	protected.Use(h.authMiddleware())
+	protected.GET("/api/protected", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+	res := performRequest(protected, http.MethodGet, "/api/protected", nil, nil, sessionCookie)
+	if res.Code != http.StatusOK {
+		t.Fatalf("protected status = %d", res.Code)
+	}
+
+	r.DELETE("/api/sessions", h.logout)
+	logout := performRequest(r, http.MethodDelete, "/api/sessions", nil, nil, sessionCookie)
+	if logout.Code != http.StatusNoContent {
+		t.Fatalf("logout status = %d", logout.Code)
+	}
+	if _, ok := sessionCache.values[sessionCacheKey(sessionCookie.Value)]; ok {
+		t.Fatal("expected logout to delete cached session")
+	}
+}

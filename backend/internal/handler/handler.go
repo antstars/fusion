@@ -23,6 +23,7 @@ type Handler struct {
 	config               *config.Config
 	cache                cache.Cache
 	cacheTTL             time.Duration
+	sessionCache         cache.Cache
 	passwordHash         string // bcrypt hash computed at startup
 	passwordLoginEnabled bool
 	feverAPIKey          string // md5(username:password) used by Fever API
@@ -83,6 +84,9 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 		limiter:              newLoginLimiter(config.LoginRateLimit, config.LoginWindow, config.LoginBlock),
 		refreshJobs:          newRefreshJobStore(),
 		refreshEvents:        newRefreshEventBroker(),
+	}
+	if _, ok := responseCache.(cache.NoopCache); !ok {
+		h.sessionCache = responseCache
 	}
 
 	if h.allowAnonAPI {
@@ -214,7 +218,7 @@ func (h *Handler) cacheMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		key := h.cacheKey(c)
+		key := h.cacheKey(c, h.readCacheVersion(c.Request.Context()))
 		if cached, err := h.cache.Get(c.Request.Context(), key); err == nil {
 			c.Data(http.StatusOK, "application/json; charset=utf-8", cached)
 			c.Abort()
@@ -251,13 +255,26 @@ func (h *Handler) isCacheablePath(path string) bool {
 	return false
 }
 
-func (h *Handler) cacheKey(c *gin.Context) string {
+const readCacheVersionKey = "fusion:api:version"
+
+func (h *Handler) readCacheVersion(ctx context.Context) string {
+	version, err := h.cache.Get(ctx, readCacheVersionKey)
+	if err != nil {
+		if !errors.Is(err, cache.ErrMiss) {
+			slog.Warn("read cache version get failed", "error", err)
+		}
+		return "0"
+	}
+	return string(version)
+}
+
+func (h *Handler) cacheKey(c *gin.Context, version string) string {
 	sessionID, _ := c.Cookie("session")
-	return "fusion:api:" + sessionID + ":" + c.Request.URL.RequestURI()
+	return "fusion:api:v" + version + ":" + sessionID + ":" + c.Request.URL.RequestURI()
 }
 
 func (h *Handler) invalidateReadCache(ctx context.Context) {
-	if err := h.cache.DeletePrefix(ctx, "fusion:api:"); err != nil {
+	if _, err := h.cache.Increment(ctx, readCacheVersionKey); err != nil {
 		slog.Warn("read cache invalidation failed", "error", err)
 	}
 }
@@ -336,7 +353,7 @@ func (h *Handler) authMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if !h.isSessionValid(sessionID) {
+		if !h.isSessionValid(c.Request.Context(), sessionID) {
 			unauthorizedError(c)
 			c.Abort()
 			return

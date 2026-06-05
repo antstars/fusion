@@ -1,6 +1,7 @@
 import { api } from "./client";
 import type {
   APIResponse,
+  CursorListAPIResponse,
   ListAPIResponse,
   LoginRequest,
   Group,
@@ -97,11 +98,11 @@ export const itemAPI = {
     if (params?.unread !== undefined)
       query.set("unread", params.unread.toString());
     if (params?.limit) query.set("limit", params.limit.toString());
-    if (params?.offset) query.set("offset", params.offset.toString());
+    if (params?.cursor) query.set("cursor", params.cursor);
     if (params?.order_by) query.set("order_by", params.order_by);
 
     const queryString = query.toString();
-    return api.get<ListAPIResponse<Item>>(
+    return api.get<CursorListAPIResponse<Item>>(
       `/items${queryString ? `?${queryString}` : ""}`,
     );
   },

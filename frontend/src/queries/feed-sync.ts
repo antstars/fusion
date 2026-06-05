@@ -1,8 +1,8 @@
 import { type InfiniteData, type QueryClient } from "@tanstack/react-query";
-import type { Item, ListAPIResponse } from "@/lib/api";
+import type { CursorListAPIResponse, Item } from "@/lib/api";
 import { queryKeys, type NormalizedItemFilters } from "./keys";
 
-type ItemsInfiniteData = InfiniteData<ListAPIResponse<Item>, number>;
+type ItemsInfiniteData = InfiniteData<CursorListAPIResponse<Item>, string>;
 
 export async function refreshFeedSyncQueries(queryClient: QueryClient) {
   queryClient.removeQueries({
@@ -37,26 +37,21 @@ function pruneReadItemsFromUnreadLists(queryClient: QueryClient) {
     const filters = queryKey[2] as NormalizedItemFilters | undefined;
     if (filters?.unread !== true || !old) continue;
 
-    let removedCount = 0;
     const pages = old.pages.map((page) => {
       const data = page.data.filter((item) => {
         if (item.unread) return true;
 
-        removedCount += 1;
         return false;
       });
 
       return data.length === page.data.length ? page : { ...page, data };
     });
 
-    if (removedCount === 0) continue;
+    if (pages.every((page, index) => page === old.pages[index])) continue;
 
     queryClient.setQueryData<ItemsInfiniteData>(queryKey, {
       ...old,
-      pages: pages.map((page) => ({
-        ...page,
-        total: Math.max(0, page.total - removedCount),
-      })),
+      pages,
     });
   }
 }

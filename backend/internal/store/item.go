@@ -10,18 +10,23 @@ import (
 	"github.com/0x2E/fusion/internal/model"
 )
 
-// ListItemsParams specifies filtering and pagination for item queries.
+// ListItemsParams specifies filtering and cursor pagination for item queries.
 //
 // Pointer fields (FeedID, GroupID, Unread) are optional filters - nil means "no filter".
 // OrderBy accepts "pub_date" (default) or "created_at".
-// Limit/Offset = 0 means no limit/offset.
+// Limit = 0 means no limit.
 type ListItemsParams struct {
 	FeedID  *int64
 	GroupID *int64
 	Unread  *bool
 	Limit   int
-	Offset  int
 	OrderBy string // "pub_date" or "created_at"
+	Cursor  *ListItemsCursor
+}
+
+type ListItemsCursor struct {
+	Value int64
+	ID    int64
 }
 
 func (s *Store) ListItems(params ListItemsParams) ([]*model.Item, error) {
@@ -54,20 +59,23 @@ func (s *Store) ListItems(params ListItemsParams) ([]*model.Item, error) {
 		args = append(args, sql.Named("unread", boolToInt(*params.Unread)))
 	}
 
-	// ORDER BY cannot use named parameters, validated via allowlist instead
+	cursorColumn := "items.pub_date"
 	orderBy := "items.pub_date DESC, items.id DESC"
 	if params.OrderBy == "created_at" {
+		cursorColumn = "items.created_at"
 		orderBy = "items.created_at DESC, items.id DESC"
 	}
+	if params.Cursor != nil {
+		query += ` AND (` + cursorColumn + ` < :cursor_value OR (` + cursorColumn + ` = :cursor_value AND items.id < :cursor_id))`
+		args = append(args, sql.Named("cursor_value", params.Cursor.Value), sql.Named("cursor_id", params.Cursor.ID))
+	}
+
+	// ORDER BY cannot use named parameters, validated via allowlist instead
 	query += ` ORDER BY ` + orderBy
 
 	if params.Limit > 0 {
 		query += ` LIMIT :limit`
 		args = append(args, sql.Named("limit", params.Limit))
-	}
-	if params.Offset > 0 {
-		query += ` OFFSET :offset`
-		args = append(args, sql.Named("offset", params.Offset))
 	}
 
 	rows, err := s.query(query, args...)
@@ -451,13 +459,17 @@ func buildPrefixTSQuery(query string) string {
 }
 
 func (s *Store) searchItemsFTS(query string, limit int) ([]*SearchItemResult, error) {
+	searchExpression := "to_tsvector('simple', COALESCE(items.title, '') || ' ' || COALESCE(items.content, ''))"
+	if s.itemsSearchVectorIndexed {
+		searchExpression = "items.search_vector"
+	}
 	rows, err := s.query(`
 		WITH search_query AS (
 			SELECT to_tsquery('simple', :query) AS value
 		)
 		SELECT items.id, items.feed_id, items.title, items.pub_date
 		FROM items, search_query
-		WHERE to_tsvector('simple', COALESCE(items.title, '') || ' ' || COALESCE(items.content, '')) @@ search_query.value
+		WHERE `+searchExpression+` @@ search_query.value
 		ORDER BY items.pub_date DESC, items.id DESC
 		LIMIT :limit
 	`, sql.Named("query", query), sql.Named("limit", limit))

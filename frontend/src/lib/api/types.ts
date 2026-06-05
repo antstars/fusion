@@ -96,6 +96,11 @@ export interface ListAPIResponse<T> {
   total: number;
 }
 
+export interface CursorListAPIResponse<T> {
+  data: T[];
+  next_cursor?: string;
+}
+
 // Request types
 export interface LoginRequest {
   password: string;
@@ -166,7 +171,7 @@ export interface ListItemsParams {
   group_id?: number;
   unread?: boolean;
   limit?: number;
-  offset?: number;
+  cursor?: string;
   order_by?: string;
 }
 

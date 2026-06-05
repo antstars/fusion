@@ -720,12 +720,11 @@ paths:
             minimum: 1
             maximum: 100
             default: 50
-        - name: offset
+        - name: cursor
           in: query
+          description: Opaque cursor returned as next_cursor from the previous page.
           schema:
-            type: integer
-            minimum: 0
-            default: 0
+            type: string
       responses:
         "200":
           description: Read later item list
@@ -1221,14 +1220,14 @@ components:
 
     ItemListEnvelope:
       type: object
-      required: [data, total]
+      required: [data]
       properties:
         data:
           type: array
           items:
             $ref: "#/components/schemas/Item"
-        total:
-          type: integer
+        next_cursor:
+          type: string
 
     MarkItemsRequest:
       type: object

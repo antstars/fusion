@@ -19,7 +19,7 @@ import { usePreferencesStore } from "@/store";
 import { useArticleSessionStore } from "@/store/article-session";
 
 type ItemListResponse = Awaited<ReturnType<typeof itemAPI.list>>;
-type ItemsInfiniteData = InfiniteData<ItemListResponse, number>;
+type ItemsInfiniteData = InfiniteData<ItemListResponse, string>;
 type ItemsMutationContext = {
   prevItemLists: Array<[readonly unknown[], ItemsInfiniteData | undefined]>;
   prevItemDetails: Array<readonly [number, Item | undefined]>;
@@ -32,15 +32,15 @@ interface SetItemsReadStateOptions {
 
 function buildListItemsParams(
   filters: NormalizedItemFilters,
-  offset: number,
+  cursor: string,
   pageSize: number,
 ): ListItemsParams {
   const params: ListItemsParams = {
     limit: pageSize,
-    offset,
     order_by: "pub_date",
   };
 
+  if (cursor) params.cursor = cursor;
   if (filters.feedId) params.feed_id = filters.feedId;
   if (filters.groupId) params.group_id = filters.groupId;
   if (filters.unread) params.unread = true;
@@ -56,11 +56,8 @@ export const itemQueries = {
       queryKey: [...queryKeys.items.lists(), normalizedFilters, pageSize],
       queryFn: async ({ pageParam }) =>
         itemAPI.list(buildListItemsParams(normalizedFilters, pageParam, pageSize)),
-      initialPageParam: 0,
-      getNextPageParam: (lastPage, allPages) => {
-        const fetched = allPages.reduce((n, p) => n + p.data.length, 0);
-        return fetched < lastPage.total ? fetched : undefined;
-      },
+      initialPageParam: "",
+      getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
     });
   },
   detail: (itemId: number) =>
@@ -131,7 +128,6 @@ function applyOptimisticItemReadState(
     qc.setQueryData<ItemsInfiniteData>(queryKey, (old) => {
       if (!old) return old;
 
-      let removedCount = 0;
       const pages = old.pages.map((page) => {
         const data: Item[] = [];
 
@@ -154,7 +150,6 @@ function applyOptimisticItemReadState(
           updatedItemsById.set(item.id, updatedItem);
 
           if (removeReadItems) {
-            removedCount += 1;
             continue;
           }
 
@@ -166,12 +161,7 @@ function applyOptimisticItemReadState(
 
       return {
         ...old,
-        pages: pages.map((page) => ({
-          ...page,
-          total: removeReadItems
-            ? Math.max(0, page.total - removedCount)
-            : page.total,
-        })),
+        pages,
       };
     });
   }

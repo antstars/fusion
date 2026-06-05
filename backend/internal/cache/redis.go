@@ -75,6 +75,14 @@ func (c *RedisCache) Set(ctx context.Context, key string, value []byte, ttl time
 	return c.client.Set(ctx, key, value, ttl).Err()
 }
 
+func (c *RedisCache) Delete(ctx context.Context, key string) error {
+	return c.client.Del(ctx, key).Err()
+}
+
+func (c *RedisCache) Increment(ctx context.Context, key string) (int64, error) {
+	return c.client.Incr(ctx, key).Result()
+}
+
 func (c *RedisCache) DeletePrefix(ctx context.Context, prefix string) error {
 	iter := c.client.Scan(ctx, 0, prefix+"*", c.scanCount).Iterator()
 	keys := make([]string, 0, 100)

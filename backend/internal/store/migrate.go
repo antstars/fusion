@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS items (
 	content TEXT DEFAULT '',
 	pub_date BIGINT DEFAULT 0,
 	unread INTEGER DEFAULT 1,
-	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT))
+	created_at BIGINT NOT NULL DEFAULT (CAST(EXTRACT(EPOCH FROM NOW()) AS BIGINT)),
+	search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(content, ''))) STORED
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_items_feed_guid ON items(feed_id, guid);
 CREATE INDEX IF NOT EXISTS idx_items_unread ON items(unread) WHERE unread = 1;
@@ -58,7 +59,17 @@ CREATE INDEX IF NOT EXISTS idx_items_feed_unread ON items(feed_id, unread);
 CREATE INDEX IF NOT EXISTS idx_items_unread_pub_date_id ON items(pub_date DESC, id DESC) WHERE unread = 1;
 CREATE INDEX IF NOT EXISTS idx_items_feed_pub_date_id ON items(feed_id, pub_date DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_items_feed_unread_pub_date_id ON items(feed_id, unread, pub_date DESC, id DESC);
-CREATE INDEX IF NOT EXISTS idx_items_search ON items USING GIN (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(content, '')));
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT 1
+		FROM information_schema.columns
+		WHERE table_name = 'items'
+		  AND column_name = 'search_vector'
+	) THEN
+		CREATE INDEX IF NOT EXISTS idx_items_search ON items USING GIN (search_vector);
+	END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS bookmarks (
 	id BIGSERIAL PRIMARY KEY,

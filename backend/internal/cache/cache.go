@@ -11,6 +11,8 @@ var ErrMiss = errors.New("cache miss")
 type Cache interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
+	Delete(ctx context.Context, key string) error
+	Increment(ctx context.Context, key string) (int64, error)
 	DeletePrefix(ctx context.Context, prefix string) error
 	Close() error
 }
@@ -23,6 +25,14 @@ func (NoopCache) Get(context.Context, string) ([]byte, error) {
 
 func (NoopCache) Set(context.Context, string, []byte, time.Duration) error {
 	return nil
+}
+
+func (NoopCache) Delete(context.Context, string) error {
+	return nil
+}
+
+func (NoopCache) Increment(context.Context, string) (int64, error) {
+	return 0, nil
 }
 
 func (NoopCache) DeletePrefix(context.Context, string) error {
