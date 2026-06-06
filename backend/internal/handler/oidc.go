@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/0x2E/fusion/internal/auth"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,8 +20,20 @@ func (h *Handler) oidcLogin(c *gin.Context) {
 		return
 	}
 
+	if h.oidcStartLimiter != nil {
+		allowed, retryAfter := h.oidcStartLimiter.allow(c.ClientIP(), time.Now())
+		if !allowed {
+			tooManyRequestsError(c, retryAfter)
+			return
+		}
+	}
+
 	authURL, err := h.oidcAuth.AuthURL()
 	if err != nil {
+		if errors.Is(err, auth.ErrOIDCStateStoreFull) {
+			tooManyRequestsError(c, 60)
+			return
+		}
 		internalError(c, err, "oidc auth url")
 		return
 	}

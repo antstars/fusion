@@ -3,15 +3,17 @@ package handler
 import (
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/0x2E/feedfinder"
 	"github.com/0x2E/fusion/internal/pkg/httpc"
 	"github.com/0x2E/fusion/internal/store"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gin-gonic/gin"
 	"github.com/mmcdole/gofeed"
 )
@@ -59,6 +61,7 @@ type batchCreateFeedItem struct {
 
 const refreshAllTimeout = 30 * time.Minute
 const maxBatchCreateFeeds = 100
+const maxDiscoveryHTMLBytes = 2 * 1024 * 1024
 
 func (h *Handler) listFeeds(c *gin.Context) {
 	feeds, err := h.store.ListFeeds()
@@ -219,7 +222,7 @@ func (h *Handler) validateFeed(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 	defer cancel()
 
-	found, err := feedfinder.Find(ctx, target, nil)
+	found, err := h.discoverFeeds(ctx, target, allowPrivateFeeds)
 	if err != nil {
 		slog.Warn("feed discovery failed", "url", target, "error", err)
 	}
@@ -245,7 +248,116 @@ func (h *Handler) validateFeed(c *gin.Context) {
 	dataResponse(c, validateFeedResponse{Feeds: feeds})
 }
 
-func normalizeDiscoveredFeeds(found []feedfinder.Feed) []discoveredFeed {
+func (h *Handler) discoverFeeds(ctx context.Context, target string, allowPrivateFeeds bool) ([]discoveredFeed, error) {
+	client, err := httpc.NewClient(30*time.Second, "", allowPrivateFeeds)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	if err != nil {
+		return nil, err
+	}
+	httpc.SetDefaultHeaders(req)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("feed discovery fetch failed")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(io.LimitReader(resp.Body, maxDiscoveryHTMLBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	return extractDiscoveredFeeds(doc, target), nil
+}
+
+func extractDiscoveredFeeds(doc *goquery.Document, baseURL string) []discoveredFeed {
+	result := []discoveredFeed{}
+
+	doc.Find("head link[rel]").Each(func(_ int, s *goquery.Selection) {
+		rel, _ := s.Attr("rel")
+		if !strings.Contains(strings.ToLower(rel), "alternate") {
+			return
+		}
+		feedType, _ := s.Attr("type")
+		if !isFeedMIMEType(feedType) {
+			return
+		}
+		href, _ := s.Attr("href")
+		link := resolveDiscoveredFeedURL(baseURL, href)
+		if link == "" {
+			return
+		}
+		title, _ := s.Attr("title")
+		result = append(result, discoveredFeed{
+			Title: strings.TrimSpace(title),
+			Link:  link,
+		})
+	})
+
+	doc.Find("body a[href]").Each(func(_ int, s *goquery.Selection) {
+		href, _ := s.Attr("href")
+		text := strings.TrimSpace(s.Text())
+		if !looksLikeFeedLink(href, text) {
+			return
+		}
+		link := resolveDiscoveredFeedURL(baseURL, href)
+		if link == "" {
+			return
+		}
+		result = append(result, discoveredFeed{
+			Title: text,
+			Link:  link,
+		})
+	})
+
+	return result
+}
+
+func isFeedMIMEType(value string) bool {
+	mimeType := strings.ToLower(strings.TrimSpace(strings.Split(value, ";")[0]))
+	switch mimeType {
+	case "application/rss+xml", "application/atom+xml", "application/feed+json", "application/xml", "text/xml":
+		return true
+	default:
+		return false
+	}
+}
+
+func looksLikeFeedLink(href, text string) bool {
+	value := strings.ToLower(href + " " + text)
+	return strings.Contains(value, "rss") || strings.Contains(value, "atom") || strings.Contains(value, "feed")
+}
+
+func resolveDiscoveredFeedURL(baseURL, rawLink string) string {
+	rawLink = strings.TrimSpace(rawLink)
+	if rawLink == "" {
+		return ""
+	}
+
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return ""
+	}
+	parsed, err := base.Parse(rawLink)
+	if err != nil || parsed.Host == "" {
+		return ""
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return ""
+	}
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func normalizeDiscoveredFeeds(found []discoveredFeed) []discoveredFeed {
 	result := make([]discoveredFeed, 0, len(found))
 	seen := make(map[string]struct{}, len(found))
 

@@ -14,9 +14,6 @@ func requestLogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		requestPath := c.Request.URL.Path
-		if rawQuery := strings.TrimSpace(c.Request.URL.RawQuery); rawQuery != "" {
-			requestPath += "?" + rawQuery
-		}
 
 		c.Next()
 

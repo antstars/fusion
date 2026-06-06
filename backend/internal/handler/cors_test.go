@@ -40,6 +40,14 @@ func TestCORSMiddleware(t *testing.T) {
 			wantStatus:      http.StatusOK,
 			wantAllowOrigin: "https://any.example.com",
 		},
+		{
+			name:            "allows any origin when wildcard is configured",
+			method:          http.MethodGet,
+			origin:          "https://any.example.com",
+			allowedOrigins:  []string{"*"},
+			wantStatus:      http.StatusOK,
+			wantAllowOrigin: "https://any.example.com",
+		},
 	}
 
 	for _, tt := range tests {
@@ -67,5 +75,18 @@ func TestCORSMiddleware(t *testing.T) {
 				t.Fatalf("expected allow-origin header %q, got %q", tt.wantAllowOrigin, got)
 			}
 		})
+	}
+}
+
+func TestCORSMiddlewareAllowsRequestsWithoutOriginWhenNotConfigured(t *testing.T) {
+	h := &Handler{config: &config.Config{}}
+
+	r := newTestRouter()
+	r.Use(h.corsMiddleware())
+	r.GET("/api/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+	w := performRequest(r, http.MethodGet, "/api/test", nil, nil)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 }

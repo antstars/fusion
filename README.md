@@ -145,9 +145,9 @@ SQLite is no longer supported, and Fusion does not automatically migrate SQLite 
 
 Legacy env names (`PASSWORD`, `PORT`) are still accepted for backward compatibility.
 
-`FUSION_CORS_ALLOWED_ORIGINS` defaults to allowing all origins for simple local
-and internal deployments. Set it explicitly for production deployments that are
-reachable from untrusted networks.
+`FUSION_CORS_ALLOWED_ORIGINS` is optional and defaults to allowing all origins
+for simple local, internal, and self-hosted deployments. Set it explicitly to
+restrict browser origins for public deployments.
 
 ## Documentation
 

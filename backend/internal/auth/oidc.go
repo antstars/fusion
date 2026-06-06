@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -29,7 +30,12 @@ type stateEntry struct {
 	createdAt    time.Time
 }
 
-const stateMaxAge = 10 * time.Minute
+const (
+	stateMaxAge   = 10 * time.Minute
+	maxOIDCStates = 512
+)
+
+var ErrOIDCStateStoreFull = errors.New("oidc state store full")
 
 func NewOIDC(ctx context.Context, issuer, clientID, clientSecret, redirectURI string) (*OIDCAuthenticator, error) {
 	provider, err := oidc.NewProvider(ctx, issuer)
@@ -73,6 +79,10 @@ func (a *OIDCAuthenticator) AuthURL() (authURL string, err error) {
 
 	a.mu.Lock()
 	a.cleanExpiredStates()
+	if len(a.states) >= maxOIDCStates {
+		a.mu.Unlock()
+		return "", ErrOIDCStateStoreFull
+	}
 	a.states[state] = stateEntry{codeVerifier: codeVerifier, createdAt: time.Now()}
 	a.mu.Unlock()
 

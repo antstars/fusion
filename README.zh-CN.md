@@ -144,6 +144,8 @@ Redis 也支持结构化 `FUSION_REDIS_*` 配置。设置 `FUSION_REDIS_URL` 后
 
 兼容旧环境变量名：`PASSWORD`、`PORT`。
 
+`FUSION_CORS_ALLOWED_ORIGINS` 是可选项，默认允许所有 Origin，方便本地、内网和简单自托管部署。公网部署如需限制浏览器来源，可显式配置允许的 Origin。
+
 ## 文档
 
 - 英文 README：[`README.md`](./README.md)

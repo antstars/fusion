@@ -32,14 +32,20 @@ type Handler struct {
 		RefreshFeed(ctx context.Context, feedID int64) error
 		RefreshAll(ctx context.Context) (int, error)
 	}
-	sessions  map[string]int64        // sessionID -> unix expiry seconds
-	mu        sync.RWMutex            // protects sessions state
-	oidcAuth  *auth.OIDCAuthenticator // nil when OIDC is disabled
-	limiter   *loginLimiter
-	lastSweep int64
+	sessions         map[string]int64  // sessionID -> unix expiry seconds
+	mu               sync.RWMutex      // protects sessions state
+	oidcAuth         oidcAuthenticator // nil when OIDC is disabled
+	limiter          *loginLimiter
+	oidcStartLimiter *requestLimiter
+	lastSweep        int64
 
 	refreshJobs   *refreshJobStore
 	refreshEvents *refreshEventBroker
+}
+
+type oidcAuthenticator interface {
+	AuthURL() (string, error)
+	Callback(ctx context.Context, state, code string) (string, error)
 }
 
 func New(store *store.Store, config *config.Config, puller interface {
@@ -82,6 +88,7 @@ func NewWithCache(store *store.Store, config *config.Config, puller interface {
 		puller:               puller,
 		sessions:             make(map[string]int64),
 		limiter:              newLoginLimiter(config.LoginRateLimit, config.LoginWindow, config.LoginBlock),
+		oidcStartLimiter:     newRequestLimiter(30, 60, 60),
 		refreshJobs:          newRefreshJobStore(),
 		refreshEvents:        newRefreshEventBroker(),
 	}
