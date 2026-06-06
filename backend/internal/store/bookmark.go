@@ -10,9 +10,12 @@ import (
 
 func (s *Store) ListBookmarks(limit, offset int) ([]*model.Bookmark, error) {
 	query := `
-		SELECT id, item_id, link, title, content, pub_date, feed_name, created_at
+		SELECT bookmarks.id, bookmarks.item_id, bookmarks.link, bookmarks.title, bookmarks.content,
+		       bookmarks.pub_date, bookmarks.feed_name, bookmarks.created_at,
+		       COALESCE(items.unread, 0) AS unread
 		FROM bookmarks
-		ORDER BY created_at DESC, id DESC
+		LEFT JOIN items ON items.id = bookmarks.item_id
+		ORDER BY bookmarks.created_at DESC, bookmarks.id DESC
 	`
 	args := []any{}
 
@@ -34,9 +37,11 @@ func (s *Store) ListBookmarks(limit, offset int) ([]*model.Bookmark, error) {
 	bookmarks := []*model.Bookmark{}
 	for rows.Next() {
 		b := &model.Bookmark{}
-		if err := rows.Scan(&b.ID, &b.ItemID, &b.Link, &b.Title, &b.Content, &b.PubDate, &b.FeedName, &b.CreatedAt); err != nil {
+		var unread int
+		if err := rows.Scan(&b.ID, &b.ItemID, &b.Link, &b.Title, &b.Content, &b.PubDate, &b.FeedName, &b.CreatedAt, &unread); err != nil {
 			return nil, err
 		}
+		b.Unread = intToBool(unread)
 		bookmarks = append(bookmarks, b)
 	}
 	return bookmarks, rows.Err()
@@ -44,17 +49,22 @@ func (s *Store) ListBookmarks(limit, offset int) ([]*model.Bookmark, error) {
 
 func (s *Store) GetBookmark(id int64) (*model.Bookmark, error) {
 	b := &model.Bookmark{}
+	var unread int
 	err := s.queryRow(`
-		SELECT id, item_id, link, title, content, pub_date, feed_name, created_at
+		SELECT bookmarks.id, bookmarks.item_id, bookmarks.link, bookmarks.title, bookmarks.content,
+		       bookmarks.pub_date, bookmarks.feed_name, bookmarks.created_at,
+		       COALESCE(items.unread, 0) AS unread
 		FROM bookmarks
-		WHERE id = :id
-	`, sql.Named("id", id)).Scan(&b.ID, &b.ItemID, &b.Link, &b.Title, &b.Content, &b.PubDate, &b.FeedName, &b.CreatedAt)
+		LEFT JOIN items ON items.id = bookmarks.item_id
+		WHERE bookmarks.id = :id
+	`, sql.Named("id", id)).Scan(&b.ID, &b.ItemID, &b.Link, &b.Title, &b.Content, &b.PubDate, &b.FeedName, &b.CreatedAt, &unread)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%w: bookmark", ErrNotFound)
 		}
 		return nil, fmt.Errorf("get bookmark: %w", err)
 	}
+	b.Unread = intToBool(unread)
 	return b, nil
 }
 

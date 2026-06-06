@@ -12,6 +12,7 @@ export const zhMessages: PartialMessages = {
   "common.fusionLogo": "Fusion 标志",
   "common.import": "导入",
   "common.importing": "导入中...",
+  "common.more": "更多操作",
   "common.navigation": "导航",
   "common.next": "下一篇",
   "common.or": "或",

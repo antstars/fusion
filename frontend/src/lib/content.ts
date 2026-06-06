@@ -67,6 +67,24 @@ interface ProcessArticleContentOptions {
   imageUnavailableLabel?: string;
 }
 
+const maxArticleContentCacheEntries = 100;
+const articleContentCache = new Map<string, string>();
+
+function getArticleContentCacheKey(html: string, articleUrl: string | null): string {
+  return `${articleUrl ?? ""}\0${html}`;
+}
+
+function rememberArticleContent(key: string, html: string) {
+  if (articleContentCache.size >= maxArticleContentCacheEntries) {
+    const oldestKey = articleContentCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      articleContentCache.delete(oldestKey);
+    }
+  }
+
+  articleContentCache.set(key, html);
+}
+
 function isTrackingPixel(img: HTMLImageElement): boolean {
   const width = img.getAttribute("width");
   const height = img.getAttribute("height");
@@ -187,6 +205,15 @@ export function processArticleContent(
   options: ProcessArticleContentOptions = {},
 ): string {
   const safeArticleUrl = toSafeExternalUrl(articleUrl);
+  const canUseCache = !options.failedImageUrls || options.failedImageUrls.size === 0;
+  const cacheKey = canUseCache
+    ? getArticleContentCacheKey(html, safeArticleUrl)
+    : null;
+  if (cacheKey) {
+    const cached = articleContentCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+  }
+
   const fragment = purify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
@@ -200,5 +227,10 @@ export function processArticleContent(
 
   const container = document.createElement("div");
   container.appendChild(fragment);
-  return container.innerHTML;
+  const processed = container.innerHTML;
+  if (cacheKey) {
+    rememberArticleContent(cacheKey, processed);
+  }
+
+  return processed;
 }

@@ -12,6 +12,7 @@ export const svMessages: PartialMessages = {
   "common.fusionLogo": "Fusion-logotyp",
   "common.import": "Importera",
   "common.importing": "Importerar...",
+  "common.more": "Fler atgarder",
   "common.navigation": "Navigering",
   "common.next": "Nasta",
   "common.or": "eller",

@@ -537,4 +537,10 @@
   [data-slot="tabs-trigger"]:hover {
     transform: none;
   }
+
+  .app-panel,
+  .bg-panel,
+  [data-slot="tabs-list"] {
+    backdrop-filter: none;
+  }
 }

@@ -106,7 +106,7 @@ export function useReadLaterArticles(filters: {
         link: item.link,
         content: item.content,
         pub_date: item.pub_date,
-        unread: false,
+        unread: item.unread,
         created_at: item.created_at,
         bookmarked: false,
         read_later: true,

@@ -12,6 +12,7 @@ export const ptMessages: PartialMessages = {
   "common.fusionLogo": "Logo do Fusion",
   "common.import": "Importar",
   "common.importing": "Importando...",
+  "common.more": "Mais acoes",
   "common.navigation": "Navegacao",
   "common.next": "Proximo",
   "common.or": "ou",

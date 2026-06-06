@@ -73,6 +73,43 @@ func TestListReadLaterItems(t *testing.T) {
 	})
 }
 
+func TestListReadLaterItemsIncludesUnreadState(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Unread Read Later Group")
+	feed := mustCreateFeed(t, store, group.ID, "Unread Read Later Feed", "https://example.com/feed.xml", "https://example.com", "")
+	unreadItem := mustCreateItem(t, store, feed.ID, "read-later-unread", "Unread Item", "https://example.com/unread", "Content", 123)
+	readItem := mustCreateItem(t, store, feed.ID, "read-later-read", "Read Item", "https://example.com/read", "Content", 124)
+	if err := store.UpdateItemUnread(readItem.ID, false); err != nil {
+		t.Fatalf("UpdateItemUnread() failed: %v", err)
+	}
+
+	mustCreateReadLaterItem(t, store, &unreadItem.ID, unreadItem.Link, unreadItem.Title, unreadItem.Content, unreadItem.PubDate, feed.Name)
+	mustCreateReadLaterItem(t, store, &readItem.ID, readItem.Link, readItem.Title, readItem.Content, readItem.PubDate, feed.Name)
+	mustCreateReadLaterItem(t, store, nil, "https://example.com/orphan", "Orphan", "Content", 125, feed.Name)
+
+	items, err := store.ListReadLaterItems(10, 0)
+	if err != nil {
+		t.Fatalf("ListReadLaterItems() failed: %v", err)
+	}
+
+	unreadByTitle := map[string]bool{}
+	for _, item := range items {
+		unreadByTitle[item.Title] = item.Unread
+	}
+
+	if !unreadByTitle["Unread Item"] {
+		t.Fatal("expected linked unread read-later item to report unread=true")
+	}
+	if unreadByTitle["Read Item"] {
+		t.Fatal("expected linked read read-later item to report unread=false")
+	}
+	if unreadByTitle["Orphan"] {
+		t.Fatal("expected orphan read-later item to report unread=false")
+	}
+}
+
 func TestGetReadLaterItem(t *testing.T) {
 	store, _ := setupTestDB(t)
 	defer closeStore(t, store)

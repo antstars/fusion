@@ -107,6 +107,43 @@ func TestListBookmarks(t *testing.T) {
 	})
 }
 
+func TestListBookmarksIncludesUnreadState(t *testing.T) {
+	store, _ := setupTestDB(t)
+	defer closeStore(t, store)
+
+	group := mustCreateGroup(t, store, "Unread Bookmark Group")
+	feed := mustCreateFeed(t, store, group.ID, "Unread Bookmark Feed", "https://example.com/feed.xml", "https://example.com", "")
+	unreadItem := mustCreateItem(t, store, feed.ID, "bookmark-unread", "Unread Item", "https://example.com/unread", "Content", 123)
+	readItem := mustCreateItem(t, store, feed.ID, "bookmark-read", "Read Item", "https://example.com/read", "Content", 124)
+	if err := store.UpdateItemUnread(readItem.ID, false); err != nil {
+		t.Fatalf("UpdateItemUnread() failed: %v", err)
+	}
+
+	mustCreateBookmark(t, store, &unreadItem.ID, unreadItem.Link, unreadItem.Title, unreadItem.Content, unreadItem.PubDate, feed.Name)
+	mustCreateBookmark(t, store, &readItem.ID, readItem.Link, readItem.Title, readItem.Content, readItem.PubDate, feed.Name)
+	mustCreateBookmark(t, store, nil, "https://example.com/orphan", "Orphan", "Content", 125, feed.Name)
+
+	bookmarks, err := store.ListBookmarks(10, 0)
+	if err != nil {
+		t.Fatalf("ListBookmarks() failed: %v", err)
+	}
+
+	unreadByTitle := map[string]bool{}
+	for _, bookmark := range bookmarks {
+		unreadByTitle[bookmark.Title] = bookmark.Unread
+	}
+
+	if !unreadByTitle["Unread Item"] {
+		t.Fatal("expected linked unread bookmark to report unread=true")
+	}
+	if unreadByTitle["Read Item"] {
+		t.Fatal("expected linked read bookmark to report unread=false")
+	}
+	if unreadByTitle["Orphan"] {
+		t.Fatal("expected orphan bookmark to report unread=false")
+	}
+}
+
 func TestGetBookmark(t *testing.T) {
 	store, _ := setupTestDB(t)
 	defer closeStore(t, store)

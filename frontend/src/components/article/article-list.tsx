@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,7 @@ import { ContentHeader } from "@/components/layout/content-header";
 import { SidebarTrigger } from "@/components/layout/sidebar-trigger";
 import { useArticleNavigation } from "@/hooks/use-keyboard";
 import { useUrlState, type ArticleFilter } from "@/hooks/use-url-state";
-import {
-  itemQueries,
-  useItems,
-  useMarkItemsRead,
-} from "@/queries/items";
+import { useItems, useMarkItemsRead } from "@/queries/items";
 import { useFeedLookup, useRefreshFeeds } from "@/queries/feeds";
 import { useGroups } from "@/queries/groups";
 import {
@@ -26,7 +22,6 @@ import {
   useReadLaterArticles,
   useReadLaterLookup,
 } from "@/queries/read-later";
-import { queryKeys } from "@/queries/keys";
 import { getFaviconUrl } from "@/lib/api/favicon";
 import { dedupeArticlesByIdentity } from "@/lib/article-dedupe";
 import { useI18n } from "@/lib/i18n";
@@ -50,7 +45,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     selectedArticleId,
     setSelectedArticle,
   } = useUrlState();
-  const queryClient = useQueryClient();
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const [starredUnreadOverrides, setStarredUnreadOverrides] = useState<
     Record<number, boolean>
   >({});
@@ -119,16 +114,9 @@ export function ArticleList({ compact = false }: ArticleListProps) {
       const override = starredUnreadOverrides[article.id];
       if (override !== undefined) return override;
 
-      if (article.id > 0) {
-        const cachedItem = queryClient.getQueryData<Item>(
-          queryKeys.items.detail(article.id),
-        );
-        if (cachedItem) return cachedItem.unread;
-      }
-
       return article.unread;
     },
-    [isSavedMode, queryClient, starredUnreadOverrides, unreadOverrides],
+    [isSavedMode, starredUnreadOverrides, unreadOverrides],
   );
 
   const displayArticles = useMemo(
@@ -193,10 +181,21 @@ export function ArticleList({ compact = false }: ArticleListProps) {
     unreadDisplayCount,
   ]);
 
-  // Setup keyboard navigation
-  const articleIds = displayArticles.map((a) => a.id);
+  const articleIds = useMemo(
+    () => displayArticles.map((article) => article.id),
+    [displayArticles],
+  );
   useArticleNavigation(articleIds, {
     enabled: selectedArticleId === null,
+  });
+  // TanStack Virtual intentionally returns mutable helpers for measurement.
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const rowVirtualizer = useVirtualizer({
+    count: displayArticles.length,
+    getScrollElement: () => scrollViewportRef.current,
+    estimateSize: () => (compact ? 96 : 116),
+    overscan: 8,
+    getItemKey: (index) => displayArticles[index]?.id ?? index,
   });
 
   // Determine title
@@ -213,29 +212,9 @@ export function ArticleList({ compact = false }: ArticleListProps) {
   const hasNoFeeds = !isFeedsLoading && feeds.length === 0;
 
   const handleMarkAllAsRead = async () => {
-    let unreadIds = displayArticles
+    const unreadIds = displayArticles
       .filter((a) => a.unread && a.id > 0)
       .map((a) => a.id);
-
-    if (isSavedMode) {
-      const ids = displayArticles.filter((a) => a.id > 0).map((a) => a.id);
-      const detailEntries = await Promise.all(
-        ids.map(async (id) => {
-          try {
-            const detail = await queryClient.ensureQueryData(
-              itemQueries.detail(id),
-            );
-            return [id, detail?.unread ?? false] as const;
-          } catch {
-            return [id, false] as const;
-          }
-        }),
-      );
-
-      unreadIds = detailEntries
-        .filter(([, unread]) => unread)
-        .map(([id]) => id);
-    }
 
     if (unreadIds.length === 0) return;
 
@@ -336,7 +315,7 @@ export function ArticleList({ compact = false }: ArticleListProps) {
         )}
 
         {/* Article list */}
-        <ScrollArea className="min-h-0 flex-1">
+        <ScrollArea className="min-h-0 flex-1" viewportRef={scrollViewportRef}>
           <div className="space-y-0.5 pr-1">
             {isLoading && articles.length === 0 ? (
               <div className="space-y-1.5 p-1">
@@ -370,30 +349,49 @@ export function ArticleList({ compact = false }: ArticleListProps) {
               )
             ) : (
               <>
-                {displayArticles.map((article) => {
-                  const feed = getFeedById(article.feed_id);
-                  const bookmark = getBookmarkByItemId(article.id);
-                  const readLaterItem = getReadLaterByItemId(article.id);
+                <div
+                  className="relative w-full"
+                  style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+                >
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const article = displayArticles[virtualRow.index];
+                    if (!article) return null;
 
-                  return (
-                    <ArticleItem
-                      key={article.id}
-                      article={article}
-                      compact={compact}
-                      isSelected={selectedArticleId === article.id}
-                      onSelectArticle={setSelectedArticle}
-                      feedName={
-                        feed?.name ??
-                        bookmark?.feed_name ??
-                        readLaterItem?.feed_name ??
-                        t("common.unknown")
-                      }
-                      feedFaviconUrl={
-                        feed ? getFaviconUrl(feed.link, feed.site_url) : null
-                      }
-                    />
-                  );
-                })}
+                    const feed = getFeedById(article.feed_id);
+                    const bookmark = getBookmarkByItemId(article.id);
+                    const readLaterItem = getReadLaterByItemId(article.id);
+
+                    return (
+                      <div
+                        key={virtualRow.key}
+                        ref={rowVirtualizer.measureElement}
+                        data-index={virtualRow.index}
+                        className="absolute top-0 left-0 w-full"
+                        style={{
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <ArticleItem
+                          article={article}
+                          compact={compact}
+                          isSelected={selectedArticleId === article.id}
+                          onSelectArticle={setSelectedArticle}
+                          feedName={
+                            feed?.name ??
+                            bookmark?.feed_name ??
+                            readLaterItem?.feed_name ??
+                            t("common.unknown")
+                          }
+                          feedFaviconUrl={
+                            feed
+                              ? getFaviconUrl(feed.link, feed.site_url)
+                              : null
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
                 {hasMore && (
                   <div className="flex justify-center py-4">
                     <Button

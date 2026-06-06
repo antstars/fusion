@@ -72,6 +72,7 @@ export interface Bookmark {
   pub_date: number;
   feed_name: string;
   created_at: number;
+  unread: boolean;
 }
 
 export interface ReadLaterItem {
@@ -83,6 +84,7 @@ export interface ReadLaterItem {
   pub_date: number;
   feed_name: string;
   created_at: number;
+  unread: boolean;
 }
 
 // API response wrappers

@@ -1,10 +1,6 @@
 import { memo, useMemo, useState } from "react";
-import {
-  cn,
-  extractFirstImageUrl,
-  extractSummary,
-  formatDate,
-} from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+import { getArticlePreview } from "@/lib/article-preview";
 import type { Item } from "@/lib/api";
 import { FeedFavicon } from "@/components/feed/feed-favicon";
 
@@ -46,12 +42,9 @@ function ArticleItemComponent({
   feedFaviconUrl,
   compact = false,
 }: ArticleItemProps) {
-  const summary = useMemo(() => extractSummary(article.content, 150), [
-    article.content,
-  ]);
-  const thumbnailUrl = useMemo(
-    () => extractFirstImageUrl(article.content, article.link),
-    [article.content, article.link],
+  const { summary, thumbnailUrl } = useMemo(
+    () => getArticlePreview(article),
+    [article],
   );
 
   return (
@@ -59,7 +52,7 @@ function ArticleItemComponent({
       type="button"
       onClick={() => onSelectArticle(article.id)}
       className={cn(
-        "article-row group relative grid w-full cursor-pointer grid-cols-[8px_minmax(0,1fr)_auto] items-start gap-2 border px-2 py-3 text-left transition-all",
+        "article-row group relative grid w-full cursor-pointer grid-cols-[8px_minmax(0,1fr)_auto] items-start gap-2 border px-2 py-3 text-left transition-[background-color,border-color,box-shadow,color]",
         compact && "px-1.5 py-3",
       )}
       data-selected={isSelected}
@@ -67,7 +60,7 @@ function ArticleItemComponent({
     >
       <span
         className={cn(
-          "mt-[1.1rem] size-1.5 rounded-full transition-all",
+          "mt-[1.1rem] size-1.5 rounded-full transition-colors",
           article.unread ? "bg-orange-500" : "bg-transparent",
         )}
         aria-hidden="true"

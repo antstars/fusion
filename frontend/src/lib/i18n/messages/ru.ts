@@ -12,6 +12,7 @@ export const ruMessages: PartialMessages = {
   "common.fusionLogo": "Логотип Fusion",
   "common.import": "Импорт",
   "common.importing": "Импорт...",
+  "common.more": "Больше действий",
   "common.navigation": "Навигация",
   "common.next": "Следующая",
   "common.or": "или",

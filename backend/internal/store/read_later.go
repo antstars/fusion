@@ -10,9 +10,13 @@ import (
 
 func (s *Store) ListReadLaterItems(limit, offset int) ([]*model.ReadLaterItem, error) {
 	query := `
-		SELECT id, item_id, link, title, content, pub_date, feed_name, created_at
+		SELECT read_later_items.id, read_later_items.item_id, read_later_items.link,
+		       read_later_items.title, read_later_items.content, read_later_items.pub_date,
+		       read_later_items.feed_name, read_later_items.created_at,
+		       COALESCE(items.unread, 0) AS unread
 		FROM read_later_items
-		ORDER BY created_at DESC, id DESC
+		LEFT JOIN items ON items.id = read_later_items.item_id
+		ORDER BY read_later_items.created_at DESC, read_later_items.id DESC
 	`
 	args := []any{}
 
@@ -34,9 +38,11 @@ func (s *Store) ListReadLaterItems(limit, offset int) ([]*model.ReadLaterItem, e
 	items := []*model.ReadLaterItem{}
 	for rows.Next() {
 		item := &model.ReadLaterItem{}
-		if err := rows.Scan(&item.ID, &item.ItemID, &item.Link, &item.Title, &item.Content, &item.PubDate, &item.FeedName, &item.CreatedAt); err != nil {
+		var unread int
+		if err := rows.Scan(&item.ID, &item.ItemID, &item.Link, &item.Title, &item.Content, &item.PubDate, &item.FeedName, &item.CreatedAt, &unread); err != nil {
 			return nil, err
 		}
+		item.Unread = intToBool(unread)
 		items = append(items, item)
 	}
 	return items, rows.Err()
@@ -44,17 +50,23 @@ func (s *Store) ListReadLaterItems(limit, offset int) ([]*model.ReadLaterItem, e
 
 func (s *Store) GetReadLaterItem(id int64) (*model.ReadLaterItem, error) {
 	item := &model.ReadLaterItem{}
+	var unread int
 	err := s.queryRow(`
-		SELECT id, item_id, link, title, content, pub_date, feed_name, created_at
+		SELECT read_later_items.id, read_later_items.item_id, read_later_items.link,
+		       read_later_items.title, read_later_items.content, read_later_items.pub_date,
+		       read_later_items.feed_name, read_later_items.created_at,
+		       COALESCE(items.unread, 0) AS unread
 		FROM read_later_items
-		WHERE id = :id
-	`, sql.Named("id", id)).Scan(&item.ID, &item.ItemID, &item.Link, &item.Title, &item.Content, &item.PubDate, &item.FeedName, &item.CreatedAt)
+		LEFT JOIN items ON items.id = read_later_items.item_id
+		WHERE read_later_items.id = :id
+	`, sql.Named("id", id)).Scan(&item.ID, &item.ItemID, &item.Link, &item.Title, &item.Content, &item.PubDate, &item.FeedName, &item.CreatedAt, &unread)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%w: read later item", ErrNotFound)
 		}
 		return nil, fmt.Errorf("get read later item: %w", err)
 	}
+	item.Unread = intToBool(unread)
 	return item, nil
 }
 

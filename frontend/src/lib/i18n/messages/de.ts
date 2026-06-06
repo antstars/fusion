@@ -12,6 +12,7 @@ export const deMessages: PartialMessages = {
   "common.fusionLogo": "Fusion-Logo",
   "common.import": "Importieren",
   "common.importing": "Wird importiert...",
+  "common.more": "Weitere Aktionen",
   "common.navigation": "Navigation",
   "common.next": "Nachste",
   "common.or": "oder",

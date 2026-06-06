@@ -12,6 +12,7 @@ export const esMessages: PartialMessages = {
   "common.fusionLogo": "Logo de Fusion",
   "common.import": "Importar",
   "common.importing": "Importando...",
+  "common.more": "Mas acciones",
   "common.navigation": "Navegacion",
   "common.next": "Siguiente",
   "common.or": "o",

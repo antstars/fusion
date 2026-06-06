@@ -80,6 +80,7 @@ type Bookmark struct {
 	PubDate   int64  `json:"pub_date"`
 	FeedName  string `json:"feed_name"`
 	CreatedAt int64  `json:"created_at"`
+	Unread    bool   `json:"unread"`
 }
 
 // ReadLaterItem represents a saved reading-queue snapshot.
@@ -92,6 +93,7 @@ type ReadLaterItem struct {
 	PubDate   int64  `json:"pub_date"`
 	FeedName  string `json:"feed_name"`
 	CreatedAt int64  `json:"created_at"`
+	Unread    bool   `json:"unread"`
 }
 
 // RetentionSettings controls automatic article cleanup.

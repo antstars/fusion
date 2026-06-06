@@ -10,6 +10,7 @@ export const enMessages = {
   "common.fusionLogo": "Fusion logo",
   "common.import": "Import",
   "common.importing": "Importing...",
+  "common.more": "More actions",
   "common.navigation": "Navigation",
   "common.next": "Next",
   "common.or": "or",

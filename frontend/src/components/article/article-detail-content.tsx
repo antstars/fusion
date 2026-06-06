@@ -15,10 +15,17 @@ import {
   ChevronRight,
   ExternalLink,
   Clock,
+  MoreHorizontal,
   Star,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FeedFavicon } from "@/components/feed/feed-favicon";
 import { useSelectedArticleDetail } from "@/hooks/use-selected-article-detail";
@@ -37,13 +44,6 @@ interface ReaderScrollState {
   canBackTop: boolean;
 }
 
-interface FailedImageState {
-  articleId: number | null;
-  articleContent: string;
-  articleLink: string | null;
-  urls: ReadonlySet<string>;
-}
-
 interface ArticleBodyProps {
   html: string;
   onContentRendered: () => void;
@@ -55,13 +55,6 @@ const initialReaderScrollState: ReaderScrollState = {
   scrollProgress: 0,
   showScrolledTitle: false,
   canBackTop: false,
-};
-const emptyFailedImageUrls: ReadonlySet<string> = new Set();
-const initialFailedImageState: FailedImageState = {
-  articleId: null,
-  articleContent: "",
-  articleLink: null,
-  urls: emptyFailedImageUrls,
 };
 
 function getLinkDomain(url: string) {
@@ -105,9 +98,6 @@ export function ArticleDetailContent({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showScrolledTitle, setShowScrolledTitle] = useState(false);
   const [canBackTop, setCanBackTop] = useState(false);
-  const [failedImages, setFailedImages] = useState<FailedImageState>(
-    initialFailedImageState,
-  );
   const {
     article,
     bookmark,
@@ -211,23 +201,11 @@ export function ArticleDetailContent({
   }, [article?.id, scheduleScrollStateUpdate]);
 
   const articleContent = article?.content ?? "";
-  const articleId = article?.id ?? null;
-  const articleLink = safeArticleLink ?? null;
-  const failedImageUrls =
-    failedImages.articleId === articleId &&
-    failedImages.articleContent === articleContent &&
-    failedImages.articleLink === articleLink
-      ? failedImages.urls
-      : emptyFailedImageUrls;
-
   const articleHtml = useMemo(() => {
     if (!articleContent) return "";
 
-    return processArticleContent(articleContent, safeArticleLink ?? undefined, {
-      failedImageUrls,
-      imageUnavailableLabel: t("article.imageUnavailable"),
-    });
-  }, [articleContent, failedImageUrls, safeArticleLink, t]);
+    return processArticleContent(articleContent, safeArticleLink ?? undefined);
+  }, [articleContent, safeArticleLink]);
 
   const handleArticleImageLoad = useCallback(
     (event: SyntheticEvent<HTMLDivElement>) => {
@@ -243,30 +221,19 @@ export function ArticleDetailContent({
       const target = event.target;
       if (!(target instanceof HTMLImageElement)) return;
 
-      const failedUrl = target.currentSrc || target.src;
-      if (failedUrl) {
-        setFailedImages((current) => {
-          const currentUrls =
-            current.articleId === articleId &&
-            current.articleContent === articleContent &&
-            current.articleLink === articleLink
-              ? current.urls
-              : emptyFailedImageUrls;
-          if (currentUrls.has(failedUrl)) return current;
+      const fallback = document.createElement("div");
+      fallback.className = "article-image-fallback";
+      fallback.setAttribute("role", "img");
+      fallback.setAttribute("aria-label", t("article.imageUnavailable"));
 
-          const next = new Set(currentUrls);
-          next.add(failedUrl);
-          return {
-            articleId,
-            articleContent,
-            articleLink,
-            urls: next,
-          };
-        });
-      }
+      const text = document.createElement("span");
+      text.textContent = t("article.imageUnavailable");
+      fallback.appendChild(text);
+
+      target.replaceWith(fallback);
       scheduleScrollStateUpdate();
     },
-    [articleContent, articleId, articleLink, scheduleScrollStateUpdate],
+    [scheduleScrollStateUpdate, t],
   );
 
   const handleBackTop = () => {
@@ -311,7 +278,7 @@ export function ArticleDetailContent({
             </h2>
           </div>
 
-          <div className="ml-auto flex max-w-[calc(100vw-4.25rem)] shrink-0 items-center gap-0.5 overflow-x-auto rounded-lg border border-border/55 bg-background/35 p-0.5 sm:max-w-none">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 rounded-lg border border-border/55 bg-background/35 p-0.5">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -351,7 +318,7 @@ export function ArticleDetailContent({
               variant="ghost"
               size="icon-sm"
               onClick={handleToggleReadLater}
-              className="text-muted-foreground hover:text-foreground"
+              className="hidden text-muted-foreground hover:text-foreground sm:inline-flex"
               aria-label={
                 readLater
                   ? t("article.action.removeReadLater")
@@ -373,7 +340,7 @@ export function ArticleDetailContent({
               size="icon-sm"
               onClick={safeArticleLink ? undefined : handleOpenOriginal}
               disabled={!safeArticleLink}
-              className="text-muted-foreground hover:text-foreground"
+              className="hidden text-muted-foreground hover:text-foreground sm:inline-flex"
               aria-label={t("article.action.original")}
               title={t("article.action.original")}
             >
@@ -385,6 +352,46 @@ export function ArticleDetailContent({
                 <ExternalLink className="h-4 w-4" />
               )}
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-foreground sm:hidden"
+                  aria-label={t("common.more")}
+                  title={t("common.more")}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-44">
+                <DropdownMenuItem onSelect={() => void handleToggleReadLater()}>
+                  <Clock
+                    className={`h-4 w-4 ${readLater ? "fill-current text-primary" : ""}`}
+                  />
+                  {readLater
+                    ? t("article.action.removeReadLater")
+                    : t("article.action.readLater")}
+                </DropdownMenuItem>
+                {safeArticleLink ? (
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={safeArticleLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {t("article.action.original")}
+                    </a>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem disabled>
+                    <ExternalLink className="h-4 w-4" />
+                    {t("article.action.original")}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {showCloseButton && (
